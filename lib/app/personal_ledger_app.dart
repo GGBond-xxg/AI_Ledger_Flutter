@@ -45,13 +45,22 @@ class _PersonalLedgerAppState extends State<PersonalLedgerApp> with WidgetsBindi
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+
+    // Android/iOS 进入多任务界面前会先进入 inactive/paused。
+    // 如果用户开启了密码锁，这里要尽早切到锁屏 UI，避免系统任务卡片截到资产金额。
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
       _wasBackgrounded = true;
+      store.preparePrivacySnapshot();
       return;
     }
-    if (state == AppLifecycleState.resumed && _wasBackgrounded) {
-      _wasBackgrounded = false;
-      store.lockApp();
+
+    if (state == AppLifecycleState.resumed) {
+      store.markAppForegrounded();
+      if (_wasBackgrounded) {
+        _wasBackgrounded = false;
+      }
     }
   }
 

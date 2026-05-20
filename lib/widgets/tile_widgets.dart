@@ -52,36 +52,16 @@ class AssetTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w800, fontSize: 16)),
+                      Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                       const SizedBox(height: 6),
-                      Text(_assetMeta(context, item),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(color: AppTheme.textSubtle(context))),
+                      Text(_assetMeta(context, item), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context))),
                       if (price != null) ...[
                         const SizedBox(height: 4),
-                        Text(
-                            trUnitPrice(
-                                money(price, defaultCurrency), quoteCurrency),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: AppTheme.textSubtle(context),
-                                fontSize: 12)),
+                        Text(trUnitPrice(money(price, defaultCurrency), quoteCurrency), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
                       ],
                       if (item.note.trim().isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(item.note,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: AppTheme.textSubtle(context),
-                                fontSize: 12)),
+                        Text(item.note, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
                       ],
                     ],
                   ),
@@ -97,16 +77,10 @@ class AssetTile extends StatelessWidget {
   }
 
   String _assetMeta(BuildContext context, AssetItem item) {
-    if (item.type == 'cash') {
-      return '${trimNum(item.quantity)} ${item.currency}';
-    }
-    if (item.type == 'manual') {
-      return '${trimNum(item.quantity)} × ${trimNum(item.manualPrice)} ${item.currency}';
-    }
-    if (item.type == 'metal') {
-      return '${item.symbol} · ${trimNum(item.quantity)} ${item.unit.isEmpty ? 'gram' : item.unit}';
-    }
-    return '${item.symbol} · ${trimNum(item.quantity)}';
+    if (item.type == 'cash') return '${trAssetType(item.type)} · ${trimNum(item.quantity)} ${item.currency}';
+    if (item.type == 'manual') return '${trAssetType(item.type)} · ${trimNum(item.quantity)} × ${trimNum(item.manualPrice)} ${item.currency}';
+    if (item.type == 'metal') return '${trAssetType(item.type)} · ${item.symbol} · ${trimNum(item.quantity)} ${item.unit.isEmpty ? 'gram' : item.unit}';
+    return '${trAssetType(item.type)} · ${item.symbol} · ${trimNum(item.quantity)}';
   }
 }
 
@@ -149,26 +123,12 @@ class DebtTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w800, fontSize: 16)),
+                      Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                       const SizedBox(height: 6),
-                      Text(
-                          '${trDebtDirection(item.direction)} · ${trimNum(item.amount)} ${item.currency}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(color: AppTheme.textSubtle(context))),
+                      Text('${trDebtDirection(item.direction)} · ${trimNum(item.amount)} ${item.currency}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context))),
                       if (item.note.trim().isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(item.note,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: AppTheme.textSubtle(context),
-                                fontSize: 12)),
+                        Text(item.note, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
                       ],
                       if (item.hasImage) ...[
                         const SizedBox(height: 8),
@@ -178,11 +138,7 @@ class DebtTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                _AmountText(
-                    value: money(value, defaultCurrency),
-                    color: item.isPayable
-                        ? const Color(0xFFD64545)
-                        : const Color(0xFF248B5D)),
+                _AmountText(value: money(value, defaultCurrency), color: item.isPayable ? const Color(0xFFD64545) : const Color(0xFF248B5D)),
               ],
             ),
           ),
@@ -233,18 +189,12 @@ class _DebtIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = direction == 'payable'
-        ? const Color(0xFFD64545)
-        : const Color(0xFF248B5D);
-    final icon = direction == 'payable'
-        ? Icons.call_made_rounded
-        : Icons.call_received_rounded;
+    final color = direction == 'payable' ? const Color(0xFFD64545) : const Color(0xFF248B5D);
+    final icon = direction == 'payable' ? Icons.call_made_rounded : Icons.call_received_rounded;
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(16)),
       child: Icon(icon, color: color),
     );
   }
@@ -306,9 +256,7 @@ class _DeleteBackground extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 0),
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: 22),
-      decoration: BoxDecoration(
-          color: const Color(0xFFD64545),
-          borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(color: const Color(0xFFD64545), borderRadius: BorderRadius.circular(24)),
       child: const Icon(Icons.delete_rounded, color: Colors.white),
     );
   }
@@ -320,10 +268,8 @@ Future<bool> _confirmDelete(BuildContext context, String title) async {
       title: Text('confirmDelete'.tr),
       content: Text(trDeleteCannotRecover(title)),
       actions: [
-        TextButton(
-            onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
-        FilledButton(
-            onPressed: () => Get.back(result: true), child: Text('delete'.tr)),
+        TextButton(onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
+        FilledButton(onPressed: () => Get.back(result: true), child: Text('delete'.tr)),
       ],
     ),
   );

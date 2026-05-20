@@ -27,6 +27,7 @@ class LedgerStore extends GetxController {
   final RxBool _showRefreshSpinner = false.obs;
   final RxnString _lastError = RxnString();
   final RxBool _appLocked = false.obs;
+  final RxBool _appInForeground = true.obs;
   Future<void>? _activeRefresh;
   int _refreshSequence = 0;
   final Set<int> _timedOutRefreshes = <int>{};
@@ -57,6 +58,10 @@ class LedgerStore extends GetxController {
   bool get hasApiToken => settings.apiToken.trim().isNotEmpty;
   bool get appLocked => _appLocked.value;
   set appLocked(bool value) => _appLocked.value = value;
+
+  RxBool get appInForegroundRx => _appInForeground;
+  bool get appInForeground => _appInForeground.value;
+  set appInForeground(bool value) => _appInForeground.value = value;
   bool get appLockEnabled => settings.appLockEnabled;
   bool get appBiometricsEnabled => settings.useDeviceLock;
   bool get appPinEnabled => settings.usePinLock;
@@ -97,7 +102,24 @@ class LedgerStore extends GetxController {
 
 
   void initializeAppLockState() {
+    appInForeground = true;
     appLocked = settings.appLockEnabled;
+  }
+
+  /// 进入后台/多任务前先切到锁屏，避免系统任务卡片截到资产金额。
+  void preparePrivacySnapshot() {
+    appInForeground = false;
+    if (settings.appLockEnabled) {
+      appLocked = true;
+    }
+  }
+
+  /// 回到前台时保持锁屏状态；LockScreen 会在前台后再触发生物识别。
+  void markAppForegrounded() {
+    appInForeground = true;
+    if (settings.appLockEnabled) {
+      appLocked = true;
+    }
   }
 
   void lockApp() {

@@ -25,22 +25,49 @@ class LockScreen extends StatefulWidget {
   State<LockScreen> createState() => _LockScreenState();
 }
 
-class _LockScreenState extends State<LockScreen> {
+class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
   final LedgerStore store = Get.find<LedgerStore>();
   final LocalAuthentication _auth = LocalAuthentication();
   String _pin = '';
   bool _authenticating = false;
   bool _autoPrompted = false;
+  Worker? _foregroundWorker;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && store.appBiometricsEnabled && !_autoPrompted) {
-        _autoPrompted = true;
-        _authenticateDevice();
+    WidgetsBinding.instance.addObserver(this);
+
+    _foregroundWorker = ever<bool>(store.appInForegroundRx, (foreground) {
+      if (foreground) {
+        _promptBiometricsIfReady();
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _promptBiometricsIfReady());
+  }
+
+  @override
+  void dispose() {
+    _foregroundWorker?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _promptBiometricsIfReady());
+    }
+  }
+
+  void _promptBiometricsIfReady() {
+    if (!mounted || _autoPrompted || !store.appInForeground || !store.appLocked || !store.appBiometricsEnabled) {
+      return;
+    }
+    _autoPrompted = true;
+    _authenticateDevice();
   }
 
   @override

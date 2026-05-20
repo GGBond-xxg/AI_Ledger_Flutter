@@ -49,12 +49,12 @@ adb install -r build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 
 ## iOS
 
-iOS 使用 `https://YourDomainName` 这种 HTTPS 地址不需要额外网络权限。相册/相机权限保留在 `Info.plist` 即可。
+iOS 使用 `https://ledger.wweh.dpdns.org` 这种 HTTPS 地址不需要额外网络权限。相册/相机权限保留在 `Info.plist` 即可。
 
 如果 iOS 也请求失败，优先检查：
 
-1. API 地址是否是 `https://YourDomainName`，不要填错域名。
-2. 手机是否能用 Safari 打开 `https://YourDomainName/api/health?token=你的token`。
+1. API 地址是否是 `https://ledger.wweh.dpdns.org`，不要填错域名。
+2. 手机是否能用 Safari 打开 `https://ledger.wweh.dpdns.org/api/health?token=你的token`。
 3. 如果以后改成 HTTP 域名，才需要配置 ATS。
 
 ## 本版 UI 修复

@@ -26,8 +26,7 @@ class TranslationService extends Translations {
       final raw = await rootBundle.loadString('assets/i18n/$code.json');
       final jsonMap = json.decode(raw) as Map<String, dynamic>;
       rawValues[code] = jsonMap;
-      result[code] =
-          jsonMap.map((key, value) => MapEntry(key, _stringify(value)));
+      result[code] = jsonMap.map((key, value) => MapEntry(key, _stringify(value)));
     }
     return TranslationService._(result);
   }
@@ -52,8 +51,7 @@ class TranslationService extends Translations {
   }
 
   static Locale currentDeviceLocale() {
-    return Locale(normalizeLanguageCode(
-        Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale));
+    return Locale(normalizeLanguageCode(Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale));
   }
 
   static String _stringify(dynamic value) {
@@ -68,25 +66,17 @@ extension TranslationListExtension on String {
   List<String> get trList {
     final value = tr;
     if (value.trim().isEmpty || value == this) return const [];
-    return value
-        .split('|')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList(growable: false);
+    return value.split('|').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(growable: false);
   }
 }
 
-String trEstimateIn(String currency) =>
-    'estimateIn'.trParams({'currency': currency});
+String trEstimateIn(String currency) => 'estimateIn'.trParams({'currency': currency});
 
-String trPartialQuoteFailed(String names) =>
-    'partialQuoteFailed'.trParams({'names': names});
+String trPartialQuoteFailed(String names) => 'partialQuoteFailed'.trParams({'names': names});
 
-String trDeleteCannotRecover(String title) =>
-    'deleteCannotRecover'.trParams({'title': title});
+String trDeleteCannotRecover(String title) => 'deleteCannotRecover'.trParams({'title': title});
 
-String trImageLoadFailed(String error) =>
-    'imageLoadFailed'.trParams({'error': error});
+String trImageLoadFailed(String error) => 'imageLoadFailed'.trParams({'error': error});
 
 String trUnitPrice(String price, String? quoteCurrency) {
   final quotePart = quoteCurrency == null ? '' : ' · $quoteCurrency';
@@ -94,6 +84,18 @@ String trUnitPrice(String price, String? quoteCurrency) {
 }
 
 String trSelectLabel(String label) => 'selectLabel'.trParams({'label': label});
+
+String trAssetType(String type) {
+  return switch (type) {
+    'cash' => 'cashType'.tr,
+    'manual' => 'manualShort'.tr,
+    'crypto' => 'cryptoType'.tr,
+    'metal' => 'metalType'.tr,
+    'stock' => 'stockType'.tr,
+    'etf' => 'etfType'.tr,
+    _ => type,
+  };
+}
 
 String trDebtDirection(String direction) {
   return direction == 'payable' ? 'iOweOthers'.tr : 'othersOweMe'.tr;
@@ -140,6 +142,7 @@ String trSymbolHelp(String type) {
   };
 }
 
+
 String trMetalUnit(String unit) {
   return switch (unit) {
     'gram' => 'unitGram'.tr,
@@ -150,9 +153,7 @@ String trMetalUnit(String unit) {
 
 String trMarketOptionName(MarketOption item) {
   if (item.assetType == 'metal') {
-    final code = item.displayCode.trim().isNotEmpty
-        ? item.displayCode.trim().toUpperCase()
-        : item.symbol.trim().toUpperCase();
+    final code = item.displayCode.trim().isNotEmpty ? item.displayCode.trim().toUpperCase() : item.symbol.trim().toUpperCase();
     return switch (code) {
       'XAU' => 'metalGoldName'.tr,
       'XAG' => 'metalSilverName'.tr,
