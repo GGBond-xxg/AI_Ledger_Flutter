@@ -162,20 +162,29 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
   Future<void> _authenticateDevice() async {
     if (_authenticating) return;
     setState(() => _authenticating = true);
+    store.unlockPromptActive = true;
     try {
       final ok = await _auth.authenticate(
         localizedReason: 'biometricUnlockReason'.tr,
         options: const AuthenticationOptions(
           biometricOnly: true,
-          stickyAuth: true,
+          stickyAuth: false,
           useErrorDialogs: true,
         ),
       );
       if (ok) {
         await store.unlockApp();
+        return;
+      }
+      store.unlockPromptActive = false;
+      if (mounted) {
+        showAppToast('biometricAuthFailedUsePin'.tr, title: 'unlockFailed'.tr, icon: Icons.error_outline_rounded);
       }
     } catch (e) {
-      showAppToast('biometricAuthFailedUsePin'.tr, title: 'unlockFailed'.tr, icon: Icons.error_outline_rounded);
+      store.unlockPromptActive = false;
+      if (mounted) {
+        showAppToast('biometricAuthFailedUsePin'.tr, title: 'unlockFailed'.tr, icon: Icons.error_outline_rounded);
+      }
     } finally {
       if (mounted) setState(() => _authenticating = false);
     }

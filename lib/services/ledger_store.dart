@@ -28,6 +28,8 @@ class LedgerStore extends GetxController {
   final RxnString _lastError = RxnString();
   final RxBool _appLocked = false.obs;
   final RxBool _appInForeground = true.obs;
+  final RxBool _unlockPromptActive = false.obs;
+  DateTime? _lastUnlockedAt;
   Future<void>? _activeRefresh;
   int _refreshSequence = 0;
   final Set<int> _timedOutRefreshes = <int>{};
@@ -62,6 +64,9 @@ class LedgerStore extends GetxController {
   RxBool get appInForegroundRx => _appInForeground;
   bool get appInForeground => _appInForeground.value;
   set appInForeground(bool value) => _appInForeground.value = value;
+
+  bool get unlockPromptActive => _unlockPromptActive.value;
+  set unlockPromptActive(bool value) => _unlockPromptActive.value = value;
   bool get appLockEnabled => settings.appLockEnabled;
   bool get appBiometricsEnabled => settings.useDeviceLock;
   bool get appPinEnabled => settings.usePinLock;
@@ -107,19 +112,37 @@ class LedgerStore extends GetxController {
   }
 
   /// 进入后台/多任务前先切到锁屏，避免系统任务卡片截到资产金额。
+  ///
+  /// 注意：Android 指纹 / iOS Face ID 弹窗本身也会触发 inactive/paused。
+  /// 这种情况下不要重复改锁屏状态，否则会出现生物识别弹窗循环。
   void preparePrivacySnapshot() {
     appInForeground = false;
+    if (unlockPromptActive) {
+      return;
+    }
     if (settings.appLockEnabled) {
       appLocked = true;
     }
   }
 
   /// 回到前台时保持锁屏状态；LockScreen 会在前台后再触发生物识别。
+  ///
+  /// 如果刚刚是系统生物识别弹窗返回，或者刚解锁成功，则不要立刻重新锁定。
   void markAppForegrounded() {
     appInForeground = true;
-    if (settings.appLockEnabled) {
-      appLocked = true;
+    if (!settings.appLockEnabled) {
+      return;
     }
+    if (unlockPromptActive || _recentlyUnlocked()) {
+      return;
+    }
+    appLocked = true;
+  }
+
+  bool _recentlyUnlocked() {
+    final last = _lastUnlockedAt;
+    if (last == null) return false;
+    return DateTime.now().difference(last) < const Duration(seconds: 2);
   }
 
   void lockApp() {
@@ -129,6 +152,8 @@ class LedgerStore extends GetxController {
   }
 
   Future<void> unlockApp() async {
+    _lastUnlockedAt = DateTime.now();
+    unlockPromptActive = false;
     appLocked = false;
     if (settings.appLockFailedAttempts != 0) {
       settings = settings.copyWith(appLockFailedAttempts: 0);
