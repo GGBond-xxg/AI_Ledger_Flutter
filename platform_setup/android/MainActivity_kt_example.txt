@@ -1,0 +1,8 @@
+// If local_auth throws an Android FragmentActivity error, change MainActivity to extend FlutterFragmentActivity.
+// Path: android/app/src/main/kotlin/com/ggbong/ledger/MainActivity.kt
+
+package com.ggbong.ledger
+
+import io.flutter.embedding.android.FlutterFragmentActivity
+
+class MainActivity: FlutterFragmentActivity()

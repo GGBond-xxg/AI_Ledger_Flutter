@@ -1,0 +1,7 @@
+CFBundleDisplayName = "记账";
+CFBundleName = "记账";
+
+NSPhotoLibraryUsageDescription = "用于选择借款凭证图片";
+NSCameraUsageDescription = "用于拍摄借款凭证图片";
+NSPhotoLibraryAddUsageDescription = "用于保存或管理借款凭证图片";
+NSFaceIDUsageDescription = "用于通过 Face ID 解锁记账";
