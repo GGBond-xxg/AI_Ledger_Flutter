@@ -14,7 +14,54 @@ class AppLockGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = Get.find<LedgerStore>();
-    return Obx(() => store.appLocked ? const LockScreen() : child);
+    return Obx(() {
+      if (store.appLocked) {
+        return const LockScreen();
+      }
+      if (store.privacySnapshotVisible) {
+        return const PrivacySnapshotScreen();
+      }
+      return child;
+    });
+  }
+}
+
+class PrivacySnapshotScreen extends StatelessWidget {
+  const PrivacySnapshotScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 86,
+                  height: 86,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Icon(Icons.lock_rounded, size: 44, color: Theme.of(context).colorScheme.primary),
+                ),
+                const SizedBox(height: 22),
+                Text('appLockedTitle'.tr, style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 8),
+                Text(
+                  'privacySnapshotDesc'.tr,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.textSubtle(context), height: 1.45),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

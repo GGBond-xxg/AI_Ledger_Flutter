@@ -27,6 +27,7 @@ class LedgerStore extends GetxController {
   final RxBool _showRefreshSpinner = false.obs;
   final RxnString _lastError = RxnString();
   final RxBool _appLocked = false.obs;
+  final RxBool _privacySnapshotVisible = false.obs;
   final RxBool _appInForeground = true.obs;
   final RxBool _unlockPromptActive = false.obs;
   DateTime? _lastUnlockedAt;
@@ -60,6 +61,9 @@ class LedgerStore extends GetxController {
   bool get hasApiToken => settings.apiToken.trim().isNotEmpty;
   bool get appLocked => _appLocked.value;
   set appLocked(bool value) => _appLocked.value = value;
+
+  bool get privacySnapshotVisible => _privacySnapshotVisible.value;
+  set privacySnapshotVisible(bool value) => _privacySnapshotVisible.value = value;
 
   RxBool get appInForegroundRx => _appInForeground;
   bool get appInForeground => _appInForeground.value;
@@ -108,7 +112,20 @@ class LedgerStore extends GetxController {
 
   void initializeAppLockState() {
     appInForeground = true;
+    privacySnapshotVisible = false;
     appLocked = settings.appLockEnabled;
+  }
+
+  /// App 即将被系统遮挡时先显示隐私锁屏快照，避免多任务窗口截到资产金额。
+  ///
+  /// inactive 可能只是下拉状态栏/截图/系统弹窗，所以 showPrivacySnapshotOnly 不会真正要求解锁；
+  /// paused/hidden 才会调用 preparePrivacySnapshot，把 App 置为真正锁定状态。
+  void showPrivacySnapshotOnly() {
+    if (!settings.appLockEnabled || unlockPromptActive || appLocked) {
+      return;
+    }
+    privacySnapshotVisible = true;
+    update();
   }
 
   /// 进入后台/多任务前先切到锁屏，避免系统任务卡片截到资产金额。
@@ -121,7 +138,9 @@ class LedgerStore extends GetxController {
       return;
     }
     if (settings.appLockEnabled) {
+      privacySnapshotVisible = true;
       appLocked = true;
+      update();
     }
   }
 
@@ -132,6 +151,7 @@ class LedgerStore extends GetxController {
   void markAppForegrounded() {
     appInForeground = true;
     if (!settings.appLockEnabled) {
+      privacySnapshotVisible = false;
       return;
     }
     if (unlockPromptActive || _recentlyUnlocked()) {
@@ -144,6 +164,9 @@ class LedgerStore extends GetxController {
   /// 这类场景保持前台状态，不主动锁 App。
   void markAppStillForegrounded() {
     appInForeground = true;
+    if (!appLocked) {
+      privacySnapshotVisible = false;
+    }
   }
 
   bool _recentlyUnlocked() {
@@ -154,6 +177,7 @@ class LedgerStore extends GetxController {
 
   void lockApp() {
     if (settings.appLockEnabled) {
+      privacySnapshotVisible = true;
       appLocked = true;
     }
   }
@@ -161,6 +185,7 @@ class LedgerStore extends GetxController {
   Future<void> unlockApp() async {
     _lastUnlockedAt = DateTime.now();
     unlockPromptActive = false;
+    privacySnapshotVisible = false;
     appLocked = false;
     if (settings.appLockFailedAttempts != 0) {
       settings = settings.copyWith(appLockFailedAttempts: 0);
@@ -179,6 +204,7 @@ class LedgerStore extends GetxController {
       appBiometricsEnabled: true,
       appLockFailedAttempts: 0,
     );
+    privacySnapshotVisible = false;
     appLocked = false;
     await save();
     update();
@@ -198,6 +224,7 @@ class LedgerStore extends GetxController {
       appPinHash: _hashPin(pin, salt),
       appLockFailedAttempts: 0,
     );
+    privacySnapshotVisible = false;
     appLocked = false;
     await save();
     update();
@@ -212,6 +239,7 @@ class LedgerStore extends GetxController {
       appPinHash: '',
       appLockFailedAttempts: 0,
     );
+    privacySnapshotVisible = false;
     appLocked = false;
     await save();
     update();
@@ -249,6 +277,7 @@ class LedgerStore extends GetxController {
     lastError = null;
     isRefreshing = false;
     showRefreshSpinner = false;
+    privacySnapshotVisible = false;
     appLocked = false;
     _activeRefresh = null;
     _refreshSequence++;

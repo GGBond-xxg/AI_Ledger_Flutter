@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
@@ -20,6 +22,7 @@ class PersonalLedgerApp extends StatefulWidget {
 class _PersonalLedgerAppState extends State<PersonalLedgerApp> with WidgetsBindingObserver {
   final LedgerStore store = Get.find<LedgerStore>();
   bool _wasBackgrounded = false;
+  Timer? _inactivePrivacyTimer;
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _PersonalLedgerAppState extends State<PersonalLedgerApp> with WidgetsBindi
 
   @override
   void dispose() {
+    _inactivePrivacyTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -46,16 +50,30 @@ class _PersonalLedgerAppState extends State<PersonalLedgerApp> with WidgetsBindi
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    // 只在 App 真正进入后台/被系统分离时锁定。
-    // 截图、下拉状态栏、系统生物识别弹窗通常会触发 inactive，
-    // 如果在 inactive 就锁定，会出现“截图也锁、拉状态栏也锁”的体验问题。
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+    // 生物识别弹窗会触发 inactive/paused，不能在这个阶段反复锁定，否则会出现指纹/Face ID 循环弹出。
+    if (store.unlockPromptActive) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive) {
+      // Android 进入多任务/切后台前会先触发 inactive。
+      // 这里先显示一层隐私锁屏快照，让系统任务卡片尽量截到锁屏，而不是资产金额。
+      // 如果只是下拉状态栏、截图、系统弹窗，resumed 时会立即清掉这层快照，不要求解锁。
+      store.showPrivacySnapshotOnly();
+      return;
+    }
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden) {
+      _inactivePrivacyTimer?.cancel();
       _wasBackgrounded = true;
       store.preparePrivacySnapshot();
       return;
     }
 
     if (state == AppLifecycleState.resumed) {
+      _inactivePrivacyTimer?.cancel();
       if (_wasBackgrounded) {
         store.markAppForegrounded();
         _wasBackgrounded = false;
