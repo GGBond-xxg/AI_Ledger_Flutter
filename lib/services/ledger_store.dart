@@ -127,7 +127,8 @@ class LedgerStore extends GetxController {
 
   /// 回到前台时保持锁屏状态；LockScreen 会在前台后再触发生物识别。
   ///
-  /// 如果刚刚是系统生物识别弹窗返回，或者刚解锁成功，则不要立刻重新锁定。
+  /// 这个方法只在 App 真的进入后台后再回来时调用。
+  /// 截图、下拉状态栏这类只触发 inactive 的场景不会调用它，避免锁屏过于敏感。
   void markAppForegrounded() {
     appInForeground = true;
     if (!settings.appLockEnabled) {
@@ -137,6 +138,12 @@ class LedgerStore extends GetxController {
       return;
     }
     appLocked = true;
+  }
+
+  /// App 只是从 inactive 回到 resumed，例如截图、下拉状态栏、系统弹窗返回。
+  /// 这类场景保持前台状态，不主动锁 App。
+  void markAppStillForegrounded() {
+    appInForeground = true;
   }
 
   bool _recentlyUnlocked() {

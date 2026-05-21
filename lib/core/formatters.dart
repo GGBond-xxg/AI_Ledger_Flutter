@@ -1,9 +1,8 @@
 import 'number_utils.dart';
 
-String money(num? value, String currency) {
-  if (value == null) return '-- $currency';
-  final text = value.toStringAsFixed(3).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
-  return '$text $currency';
+String money(num? value, String currency, {bool showCurrency = true}) {
+  final text = (value ?? 0).toStringAsFixed(3);
+  return showCurrency ? '$text $currency' : text;
 }
 
 String trimNum(num value) {

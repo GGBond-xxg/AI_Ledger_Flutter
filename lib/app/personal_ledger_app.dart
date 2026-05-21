@@ -46,20 +46,21 @@ class _PersonalLedgerAppState extends State<PersonalLedgerApp> with WidgetsBindi
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    // Android/iOS 进入多任务界面前会先进入 inactive/paused。
-    // 如果用户开启了密码锁，这里要尽早切到锁屏 UI，避免系统任务卡片截到资产金额。
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
+    // 只在 App 真正进入后台/被系统分离时锁定。
+    // 截图、下拉状态栏、系统生物识别弹窗通常会触发 inactive，
+    // 如果在 inactive 就锁定，会出现“截图也锁、拉状态栏也锁”的体验问题。
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
       _wasBackgrounded = true;
       store.preparePrivacySnapshot();
       return;
     }
 
     if (state == AppLifecycleState.resumed) {
-      store.markAppForegrounded();
       if (_wasBackgrounded) {
+        store.markAppForegrounded();
         _wasBackgrounded = false;
+      } else {
+        store.markAppStillForegrounded();
       }
     }
   }

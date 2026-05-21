@@ -302,48 +302,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<bool> _showSetPinDialog({String successToastKey = 'appLockEnabled'}) async {
-    final pinController = TextEditingController();
-    final confirmController = TextEditingController();
-
     final result = await Get.dialog<List<String>>(
-      AlertDialog(
-        title: Text('setSixDigitPin'.tr),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('setSixDigitPinDesc'.tr, style: TextStyle(color: Theme.of(context).hintColor, height: 1.45)),
-            const SizedBox(height: 14),
-            TextField(
-              controller: pinController,
-              keyboardType: TextInputType.number,
-              obscureText: true,
-              maxLength: 6,
-              decoration: InputDecoration(labelText: 'sixDigitPin'.tr, counterText: ''),
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: confirmController,
-              keyboardType: TextInputType.number,
-              obscureText: true,
-              maxLength: 6,
-              decoration: InputDecoration(labelText: 'confirmSixDigitPin'.tr, counterText: ''),
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
-          FilledButton(
-            onPressed: () => Get.back(result: [pinController.text, confirmController.text]),
-            child: Text('save'.tr),
-          ),
-        ],
-      ),
+      const _SetPinDialog(),
+      barrierDismissible: false,
     );
-
-    pinController.dispose();
-    confirmController.dispose();
 
     if (result == null) return false;
     final pin = result[0];
@@ -608,6 +570,73 @@ class _AboutSectionTitle extends StatelessWidget {
     return Text(
       title,
       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+    );
+  }
+}
+
+
+class _SetPinDialog extends StatefulWidget {
+  const _SetPinDialog();
+
+  @override
+  State<_SetPinDialog> createState() => _SetPinDialogState();
+}
+
+class _SetPinDialogState extends State<_SetPinDialog> {
+  final TextEditingController _pinController = TextEditingController();
+  final TextEditingController _confirmController = TextEditingController();
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Get.back<List<String>>(result: [_pinController.text, _confirmController.text]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('setSixDigitPin'.tr),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.58),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('setSixDigitPinDesc'.tr, style: TextStyle(color: Theme.of(context).hintColor, height: 1.45)),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _pinController,
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                maxLength: 6,
+                autofocus: true,
+                decoration: InputDecoration(labelText: 'sixDigitPin'.tr, counterText: ''),
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _confirmController,
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                maxLength: 6,
+                decoration: InputDecoration(labelText: 'confirmSixDigitPin'.tr, counterText: ''),
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                onSubmitted: (_) => _submit(),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
+        FilledButton(onPressed: _submit, child: Text('save'.tr)),
+      ],
     );
   }
 }
