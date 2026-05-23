@@ -96,29 +96,32 @@ class LedgerDropdownField<T> extends StatelessWidget {
 
   Future<T?> _showPicker(BuildContext context) async {
     final theme = Theme.of(context);
+    final screenHeight = MediaQuery.sizeOf(context).height;
 
     return Get.bottomSheet<T>(
-      SafeArea(
-          top: false,
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            decoration: BoxDecoration(
-              color: AppTheme.cardColor(context),
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: AppTheme.isDark(context) ? 0.30 : 0.12),
-                  blurRadius: 28,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.68,
+      DraggableScrollableSheet(
+        initialChildSize: 0.62,
+        minChildSize: 0.34,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (context, scrollController) {
+          return SafeArea(
+            top: false,
+            child: Container(
+              width: double.infinity,
+              constraints: BoxConstraints(maxHeight: screenHeight * 0.92),
+              decoration: BoxDecoration(
+                color: AppTheme.cardColor(context),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: AppTheme.isDark(context) ? 0.30 : 0.12),
+                    blurRadius: 28,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
               ),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(height: 10),
                   Container(
@@ -130,7 +133,7 @@ class LedgerDropdownField<T> extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 10),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
                     child: Row(
                       children: [
                         Expanded(
@@ -146,10 +149,10 @@ class LedgerDropdownField<T> extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Flexible(
+                  Expanded(
                     child: ListView.separated(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 18),
+                      controller: scrollController,
+                      padding: EdgeInsets.fromLTRB(14, 0, 14, 18 + MediaQuery.paddingOf(context).bottom),
                       itemCount: items.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
@@ -164,7 +167,7 @@ class LedgerDropdownField<T> extends StatelessWidget {
                             borderRadius: BorderRadius.circular(18),
                             onTap: () => Get.back<T>(result: item.value),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -193,10 +196,12 @@ class LedgerDropdownField<T> extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
+      ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
     );
   }
+
 }

@@ -34,8 +34,8 @@ class _AssetFormPageState extends State<AssetFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _symbolController = TextEditingController();
-  final _quantityController = TextEditingController(text: '1');
-  final _manualPriceController = TextEditingController(text: '1');
+  final _quantityController = TextEditingController();
+  final _manualPriceController = TextEditingController();
   final _noteController = TextEditingController();
 
   late String _type = widget.existing?.type ?? (widget.investmentDefault ? 'stock' : 'cash');

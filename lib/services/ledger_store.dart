@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/number_utils.dart';
 import '../models/asset_item.dart';
+import '../models/bill_item.dart';
 import '../models/debt_item.dart';
 import '../models/ledger_settings.dart';
 import '../models/market_option.dart';
@@ -22,6 +23,9 @@ class LedgerStore extends GetxController {
   final Rx<LedgerSettings> _settings = LedgerSettings().obs;
   final RxList<AssetItem> assets = <AssetItem>[].obs;
   final RxList<DebtItem> debts = <DebtItem>[].obs;
+  final RxList<BillItem> bills = <BillItem>[].obs;
+  final Rx<DateTime> selectedBillMonth = DateTime(DateTime.now().year, DateTime.now().month).obs;
+  final RxInt billsVersion = 0.obs;
   final Rxn<Map<String, dynamic>> _valuation = Rxn<Map<String, dynamic>>();
   final RxBool _isRefreshing = false.obs;
   final RxBool _showRefreshSpinner = false.obs;
@@ -103,7 +107,13 @@ class LedgerStore extends GetxController {
         ..addAll(((data['debts'] as List?) ?? [])
             .whereType<Map>()
             .map((e) => DebtItem.fromJson(e.cast<String, dynamic>())));
+      bills
+        ..clear()
+        ..addAll(((data['bills'] as List?) ?? [])
+            .whereType<Map>()
+            .map((e) => BillItem.fromJson(e.cast<String, dynamic>())));
       valuation = (data['valuation'] as Map?)?.cast<String, dynamic>();
+      _touchBills();
     } catch (_) {
       // 本地数据损坏时不让 App 崩溃。
     }
@@ -273,8 +283,10 @@ class LedgerStore extends GetxController {
     settings = LedgerSettings();
     assets.clear();
     debts.clear();
+    bills.clear();
     valuation = null;
     lastError = null;
+    _touchBills();
     isRefreshing = false;
     showRefreshSpinner = false;
     privacySnapshotVisible = false;
@@ -305,6 +317,7 @@ class LedgerStore extends GetxController {
       'settings': settings.toJson(),
       'assets': assets.map((e) => e.toJson()).toList(),
       'debts': debts.map((e) => e.toJson()).toList(),
+      'bills': bills.map((e) => e.toJson()).toList(),
       'valuation': valuation,
       'exportedAt': DateTime.now().toIso8601String(),
     });
@@ -323,7 +336,13 @@ class LedgerStore extends GetxController {
       ..addAll(((data['debts'] as List?) ?? [])
           .whereType<Map>()
           .map((e) => DebtItem.fromJson(e.cast<String, dynamic>())));
+    bills
+      ..clear()
+      ..addAll(((data['bills'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => BillItem.fromJson(e.cast<String, dynamic>())));
     valuation = (data['valuation'] as Map?)?.cast<String, dynamic>();
+    _touchBills();
     await save();
     update();
   }
@@ -358,8 +377,107 @@ class LedgerStore extends GetxController {
     return code.startsWith('zh') ? 'zh' : 'en';
   }
 
+
+  void _touchBills() {
+    billsVersion.value++;
+  }
+
+  Future<void> addBill(BillItem item) async {
+    bills.insert(0, item);
+    _applyBillAssetEffect(item);
+    selectedBillMonth.value = DateTime(item.occurredAt.year, item.occurredAt.month);
+    _touchBills();
+    _syncValuationAfterLocalChange();
+    await save();
+    update();
+  }
+
+  Future<void> updateBill(BillItem item) async {
+    final index = bills.indexWhere((e) => e.id == item.id);
+    if (index >= 0) {
+      final old = bills[index];
+      _applyBillAssetEffect(old, reverse: true);
+      bills[index] = item;
+      _applyBillAssetEffect(item);
+    } else {
+      bills.insert(0, item);
+      _applyBillAssetEffect(item);
+    }
+    selectedBillMonth.value = DateTime(item.occurredAt.year, item.occurredAt.month);
+    _touchBills();
+    _syncValuationAfterLocalChange();
+    await save();
+    update();
+  }
+
+  Future<void> removeBill(String id) async {
+    final index = bills.indexWhere((e) => e.id == id);
+    if (index >= 0) {
+      final old = bills[index];
+      bills.removeAt(index);
+      _applyBillAssetEffect(old, reverse: true);
+    }
+    _touchBills();
+    _syncValuationAfterLocalChange();
+    await save();
+    update();
+  }
+
+  void _applyBillAssetEffect(BillItem item, {bool reverse = false}) {
+    if (item.assetId.trim().isEmpty || item.amount <= 0) return;
+
+    final index = assets.indexWhere((asset) => asset.id == item.assetId && asset.type == 'cash');
+    if (index < 0) return;
+
+    final asset = assets[index];
+
+    // A bill uses the linked asset currency. If old imported data is inconsistent,
+    // do not mutate the asset to avoid silently converting money without an FX rate.
+    if (asset.currency.toUpperCase() != item.currency.toUpperCase()) return;
+
+    var delta = item.isIncome ? item.amount : -item.amount;
+    if (reverse) {
+      delta = -delta;
+    }
+
+    asset.quantity += delta;
+    assets[index] = asset;
+  }
+
+  void setBillMonth(DateTime month) {
+    selectedBillMonth.value = DateTime(month.year, month.month);
+    _touchBills();
+    update();
+  }
+
+  List<BillItem> get monthlyBills {
+    billsVersion.value;
+    final month = selectedBillMonth.value;
+    final list = bills
+        .where((e) => e.occurredAt.year == month.year && e.occurredAt.month == month.month)
+        .toList();
+    list.sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    return list;
+  }
+
+  double get monthlyIncomeTotal => monthlyBills
+      .where((e) => e.isIncome && e.currency == settings.defaultCurrency)
+      .fold<double>(0, (sum, item) => sum + item.amount);
+
+  double get monthlyExpenseTotal => monthlyBills
+      .where((e) => e.isExpense && e.currency == settings.defaultCurrency)
+      .fold<double>(0, (sum, item) => sum + item.amount);
+
+  double get monthlyBillNet => monthlyIncomeTotal - monthlyExpenseTotal;
+
+  /// Assets that can be linked to bills.
+  /// Bills are everyday income/expense records, so they should affect cash/bank style assets only.
+  List<AssetItem> get billLinkedAssets =>
+      assets.where((item) => item.type == 'cash').toList(growable: false);
+
   Future<void> addAsset(AssetItem item) async {
     assets.insert(0, item);
+    _syncValuationAfterLocalChange();
     await save();
     update();
   }
@@ -371,6 +489,7 @@ class LedgerStore extends GetxController {
     } else {
       assets.insert(0, item);
     }
+    _syncValuationAfterLocalChange();
     await save();
     update();
   }
@@ -384,6 +503,7 @@ class LedgerStore extends GetxController {
 
   Future<void> addDebt(DebtItem item) async {
     debts.insert(0, item);
+    _syncValuationAfterLocalChange();
     await save();
     update();
   }
@@ -395,6 +515,7 @@ class LedgerStore extends GetxController {
     } else {
       debts.insert(0, item);
     }
+    _syncValuationAfterLocalChange();
     await save();
     update();
   }
@@ -463,7 +584,7 @@ class LedgerStore extends GetxController {
       onTimeout: () async {
         _timedOutRefreshes.add(refreshId);
         if (refreshId == _refreshSequence) {
-          valuation = _buildLocalValuation();
+          valuation = _buildValuationPreservingExisting();
           lastError = 'refreshTimeoutError'.tr;
           isRefreshing = false;
           showRefreshSpinner = false;
@@ -473,7 +594,7 @@ class LedgerStore extends GetxController {
       },
     ).catchError((Object error, StackTrace stackTrace) async {
       if (refreshId == _refreshSequence) {
-        valuation = _buildLocalValuation();
+        valuation = _buildValuationPreservingExisting();
         lastError = error.toString().replaceFirst('Exception: ', '');
         showRefreshSpinner = false;
         await save();
@@ -535,7 +656,7 @@ class LedgerStore extends GetxController {
       }
 
       // API 失败时保留本地可计算估值，不影响继续记账。
-      valuation = _buildLocalValuation();
+      valuation = _buildValuationPreservingExisting();
       lastError = e.toString().replaceFirst('Exception: ', '');
       await save();
     } finally {
@@ -596,7 +717,14 @@ class LedgerStore extends GetxController {
       final previous = previousAssets[item.id];
       double? value = previous == null ? null : _asDouble(previous['value']);
       double? price = previous == null ? null : _asDouble(previous['price']);
+      final previousQuantity = previous == null ? null : _asDouble(previous['quantity']);
       String quoteCurrency = (previous?['quoteCurrency'] as String?) ?? item.currency;
+
+      // 离线或接口失败时，优先沿用上一轮成功刷新保存下来的估值。
+      // 如果用户只是修改了数量，则按上一轮单位估值等比例换算，避免断网后理财金额直接归零。
+      if (value != null && previousQuantity != null && previousQuantity > 0 && item.quantity != previousQuantity) {
+        value = value / previousQuantity * item.quantity;
+      }
 
       if (value == null) {
         if (item.type == 'cash' && item.currency == currency) {
@@ -633,6 +761,10 @@ class LedgerStore extends GetxController {
     final valuedDebts = debts.map((item) {
       final previous = previousDebts[item.id];
       double? value = previous == null ? null : _asDouble(previous['value']);
+      final previousAmount = previous == null ? null : _asDouble(previous['amount']);
+      if (value != null && previousAmount != null && previousAmount > 0 && item.amount != previousAmount) {
+        value = value / previousAmount * item.amount;
+      }
       if (value == null && item.currency == currency) {
         value = item.amount;
       }

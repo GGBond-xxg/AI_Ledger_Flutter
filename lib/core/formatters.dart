@@ -52,3 +52,13 @@ String shortTime(String? iso, {String fallback = '未刷新'}) {
 double toValuationAmount(Map<String, dynamic>? map, List<String> path) {
   return numFromPath(map, path) ?? 0;
 }
+
+String monthText(DateTime value) {
+  String two(int v) => v.toString().padLeft(2, '0');
+  return '${value.year}-${two(value.month)}';
+}
+
+String dateText(DateTime value) {
+  String two(int v) => v.toString().padLeft(2, '0');
+  return '${value.year}-${two(value.month)}-${two(value.day)}';
+}

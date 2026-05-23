@@ -188,3 +188,5 @@ String trNoMatch(String type) {
     _ => 'noMatch'.tr,
   };
 }
+
+String trBillCategory(String key) => 'billCategory_$key'.tr;

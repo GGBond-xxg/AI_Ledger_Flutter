@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../app/app_theme.dart';
+import '../core/formatters.dart';
 import '../l10n/translation_service.dart';
 import '../models/asset_item.dart';
+import '../models/bill_item.dart';
 import '../models/debt_item.dart';
 import '../services/ledger_store.dart';
 import '../widgets/add_action_sheet.dart';
@@ -13,6 +15,7 @@ import '../widgets/common_cards.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/tile_widgets.dart';
 import 'asset_form_page.dart';
+import 'bill_form_page.dart';
 import 'debt_form_page.dart';
 import 'settings_page.dart';
 
@@ -46,14 +49,12 @@ class _HomePageState extends State<HomePage> {
     final navBackground = AppTheme.cardColor(context);
 
     return Obx(() {
-      final normalAssets = store.assets.where((e) => e.isNormalAsset).toList();
-      final investments = store.assets.where((e) => e.isInvestment).toList();
       final lastError = store.lastError;
       final failedAssets = store.failedAssets;
 
       return Scaffold(
         floatingActionButton: FloatingActionButton(
-          onPressed: _showAddSheet,
+          onPressed: () => _tab.value == 0 ? _openBillForm() : _showAssetAddSheet(),
           child: const Icon(Icons.add_rounded, size: 30),
         ),
         bottomNavigationBar: SafeArea(
@@ -70,9 +71,8 @@ class _HomePageState extends State<HomePage> {
                 indicatorColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.13),
                 onDestinationSelected: (index) => _tab.value = index,
                 destinations: [
+                  NavigationDestination(icon: const Icon(Icons.receipt_long_outlined), selectedIcon: const Icon(Icons.receipt_long_rounded), label: 'bills'.tr),
                   NavigationDestination(icon: const Icon(Icons.account_balance_wallet_outlined), selectedIcon: const Icon(Icons.account_balance_wallet_rounded), label: 'assets'.tr),
-                  NavigationDestination(icon: const Icon(Icons.trending_up_outlined), selectedIcon: const Icon(Icons.trending_up_rounded), label: 'investment'.tr),
-                  NavigationDestination(icon: const Icon(Icons.receipt_long_outlined), selectedIcon: const Icon(Icons.receipt_long_rounded), label: 'debt'.tr),
                 ],
               ),
             ),
@@ -90,45 +90,21 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       _Header(store: store),
                       const SizedBox(height: 18),
-                      SummaryCard(store: store),
-                      const SizedBox(height: 14),
-                      if (lastError != null) ...[
-                        ErrorBanner(message: lastError),
+                      if (_tab.value == 0)
+                        _BillsPage(store: store, onAdd: _openBillForm)
+                      else ...[
+                        SummaryCard(store: store),
                         const SizedBox(height: 14),
+                        if (lastError != null) ...[
+                          ErrorBanner(message: lastError),
+                          const SizedBox(height: 14),
+                        ],
+                        if (failedAssets.isNotEmpty) ...[
+                          ErrorBanner(message: trPartialQuoteFailed(failedAssets.map((e) => e['name'] ?? e['symbol'] ?? e['id']).join('listSeparator'.tr))),
+                          const SizedBox(height: 14),
+                        ],
+                        _AssetsPage(store: store),
                       ],
-                      if (failedAssets.isNotEmpty) ...[
-                        ErrorBanner(message: trPartialQuoteFailed(failedAssets.map((e) => e['name'] ?? e['symbol'] ?? e['id']).join('listSeparator'.tr))),
-                        const SizedBox(height: 14),
-                      ],
-                      switch (_tab.value) {
-                        0 => _AssetSection(
-                            store: store,
-                            title: 'assets'.tr,
-                            description: 'assetsDesc'.tr,
-                            assets: normalAssets,
-                            emptyText: 'emptyAssetsTitle'.tr,
-                            emptySubtitle: 'emptyAssetsSubtitle'.tr,
-                            emptyIcon: Icons.account_balance_wallet_rounded,
-                            emptyTips: 'emptyAssetsTips'.trList,
-                            emptyAction: () => _openAssetForm(false),
-                          ),
-                        1 => _AssetSection(
-                            store: store,
-                            title: 'investment'.tr,
-                            description: 'investmentsDesc'.tr,
-                            assets: investments,
-                            emptyText: 'emptyInvestmentsTitle'.tr,
-                            emptySubtitle: 'emptyInvestmentsSubtitle'.tr,
-                            emptyIcon: Icons.show_chart_rounded,
-                            emptyTips: const ['AAPL', 'QQQ', 'SOL', 'XAU'],
-                            emptyAction: () => _openAssetForm(true),
-                          ),
-                        _ => _DebtSection(
-                            store: store,
-                            debts: store.debts.toList(),
-                            emptyAction: () => _openDebtForm(),
-                          ),
-                      },
                     ],
                   ),
                 ),
@@ -140,7 +116,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _showAddSheet() {
+  void _showAssetAddSheet() {
     Get.bottomSheet(
       AddActionSheet(
         onAddAsset: () {
@@ -163,6 +139,10 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
     );
+  }
+
+  Future<void> _openBillForm({BillItem? existing}) async {
+    await Get.to<void>(() => BillFormPage(existing: existing));
   }
 
   Future<void> _openAssetForm(bool investment, {AssetItem? existing}) async {
@@ -237,6 +217,182 @@ class _CircleButton extends StatelessWidget {
               : Icon(icon, key: ValueKey(icon)),
         ),
       ),
+    );
+  }
+}
+
+class _BillsPage extends StatelessWidget {
+  const _BillsPage({required this.store, required this.onAdd});
+
+  final LedgerStore store;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      // 明确监听账单列表和月份版本，避免保存账单/切换月份后需要手动刷新页面。
+      store.billsVersion.value;
+      store.selectedBillMonth.value;
+      final bills = store.monthlyBills;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _MonthSelector(store: store),
+          const SizedBox(height: 12),
+          _BillSummaryCard(store: store),
+          const SizedBox(height: 18),
+          SectionHeader(title: 'bills'.tr, description: 'billsDesc'.tr),
+          if (bills.isEmpty)
+            EmptyCard(
+              title: 'emptyBillsTitle'.tr,
+              subtitle: 'emptyBillsSubtitle'.tr,
+              icon: Icons.receipt_long_rounded,
+              tips: 'emptyBillsTips'.trList,
+              actionText: 'addBill'.tr,
+              onTap: onAdd,
+            )
+          else
+            ...bills.map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: BillTile(
+                    item: item,
+                    onDelete: () => store.removeBill(item.id),
+                    onEdit: () => Get.to<void>(() => BillFormPage(existing: item)),
+                  ),
+                )),
+        ],
+      );
+    });
+  }
+}
+
+class _MonthSelector extends StatelessWidget {
+  const _MonthSelector({required this.store});
+
+  final LedgerStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final month = store.selectedBillMonth.value;
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: month,
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+          helpText: 'selectMonth'.tr,
+        );
+        if (picked != null) {
+          store.setBillMonth(DateTime(picked.year, picked.month));
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        decoration: BoxDecoration(color: AppTheme.cardColor(context), borderRadius: BorderRadius.circular(18)),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_month_rounded, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 10),
+            Expanded(child: Text(monthText(month), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18))),
+            Text('tapToSwitchMonth'.tr, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right_rounded, color: AppTheme.textSubtle(context)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BillSummaryCard extends StatelessWidget {
+  const _BillSummaryCard({required this.store});
+
+  final LedgerStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = store.settings.defaultCurrency;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            Expanded(child: _BillTotal(label: 'expense'.tr, value: store.monthlyExpenseTotal, currency: currency, color: const Color(0xFFD64545))),
+            Expanded(child: _BillTotal(label: 'income'.tr, value: store.monthlyIncomeTotal, currency: currency, color: const Color(0xFF248B5D))),
+            Expanded(child: _BillTotal(label: 'monthNet'.tr, value: store.monthlyBillNet, currency: currency)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BillTotal extends StatelessWidget {
+  const _BillTotal({required this.label, required this.value, required this.currency, this.color});
+
+  final String label;
+  final double value;
+  final String currency;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
+        const SizedBox(height: 6),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(money(value, currency), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: color ?? AppTheme.textMain(context))),
+        ),
+      ],
+    );
+  }
+}
+
+class _AssetsPage extends StatelessWidget {
+  const _AssetsPage({required this.store});
+
+  final LedgerStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalAssets = store.assets.where((e) => e.isNormalAsset).toList();
+    final investments = store.assets.where((e) => e.isInvestment).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _AssetSection(
+          store: store,
+          title: 'funds'.tr,
+          description: 'fundsDesc'.tr,
+          assets: normalAssets,
+          emptyText: 'emptyAssetsTitle'.tr,
+          emptySubtitle: 'emptyAssetsSubtitle'.tr,
+          emptyIcon: Icons.account_balance_wallet_rounded,
+          emptyTips: 'emptyAssetsTips'.trList,
+          emptyAction: () => Get.to<void>(() => const AssetFormPage(investmentDefault: false)),
+        ),
+        const SizedBox(height: 18),
+        _AssetSection(
+          store: store,
+          title: 'investment'.tr,
+          description: 'investmentsDesc'.tr,
+          assets: investments,
+          emptyText: 'emptyInvestmentsTitle'.tr,
+          emptySubtitle: 'emptyInvestmentsSubtitle'.tr,
+          emptyIcon: Icons.show_chart_rounded,
+          emptyTips: const ['AAPL', 'QQQ', 'SOL', 'XAU'],
+          emptyAction: () => Get.to<void>(() => const AssetFormPage(investmentDefault: true)),
+        ),
+        const SizedBox(height: 18),
+        _DebtSection(store: store, debts: store.debts.toList(), emptyAction: () => Get.to<void>(() => const DebtFormPage())),
+      ],
     );
   }
 }

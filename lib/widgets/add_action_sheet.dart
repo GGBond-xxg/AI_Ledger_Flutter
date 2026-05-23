@@ -21,12 +21,12 @@ class AddActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(12),
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
       decoration: BoxDecoration(
         color: AppTheme.cardColor(context),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: AppTheme.isDark(context) ? 0.32 : 0.08), blurRadius: 30, offset: const Offset(0, 16))],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: AppTheme.isDark(context) ? 0.32 : 0.08), blurRadius: 30, offset: const Offset(0, -4))],
       ),
       child: SafeArea(
         top: false,

@@ -32,7 +32,7 @@ class _DebtFormPageState extends State<DebtFormPage> {
 
   String _direction = 'payable';
   String _currency = 'CNY';
-  String _imageBase64 = '';
+  List<String> _imageBase64List = <String>[];
   bool _pickingImage = false;
   final RxInt _uiVersion = 0.obs;
 
@@ -48,7 +48,7 @@ class _DebtFormPageState extends State<DebtFormPage> {
       _noteController.text = existing.note;
       _direction = existing.direction;
       _currency = existing.currency;
-      _imageBase64 = existing.imageBase64;
+      _imageBase64List = List<String>.from(existing.imageBase64List.take(3));
     }
   }
 
@@ -67,82 +67,87 @@ class _DebtFormPageState extends State<DebtFormPage> {
     return Obx(() {
       _uiVersion.value;
       return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'editDebt'.tr : 'addDebt'.tr)),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                FormCard(
-                  children: [
-                    LedgerDropdownField<String>(
-                      label: 'direction'.tr,
-                      value: _direction,
-                      items: [
-                        DropdownMenuItem(value: 'payable', child: Text('iOweOthers'.tr)),
-                        DropdownMenuItem(value: 'receivable', child: Text('othersOweMe'.tr)),
-                      ],
-                      onChanged: (value) { _direction = value ?? _direction; _refreshUi(); },
-                    ),
-                    LedgerTextField(
-                      controller: _nameController,
-                      label: 'name'.tr,
-                      hint: _direction == 'payable' ? 'debtNamePayableHint'.tr  : 'debtNameReceivableHint'.tr,
-                      validator: (value) => value == null || value.trim().isEmpty ? 'enterName'.tr : null,
-                    ),
-                    LedgerTextField(
-                      controller: _amountController,
-                      label: 'amount'.tr,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        final number = double.tryParse(value?.trim() ?? '');
-                        if (number == null || number <= 0) return 'enterPositiveAmount'.tr;
-                        return null;
-                      },
-                    ),
-                    LedgerDropdownField<String>(
-                      label: 'currency'.tr,
-                      value: _currency,
-                      items: kCurrencies.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                      onChanged: (value) { _currency = value ?? _currency; _refreshUi(); },
-                    ),
-                    LedgerTextField(controller: _noteController, label: 'noteOptional'.tr, maxLines: 3),
-                    _DebtImagePicker(
-                      imageBase64: _imageBase64,
-                      busy: _pickingImage,
-                      onPickFromGallery: () => _pickImage(ImageSource.gallery),
-                      onTakePhoto: () => _pickImage(ImageSource.camera),
-                      onRemove: () { _imageBase64 = ''; _refreshUi(); },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const _LocalImageNotice(),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: FilledButton(onPressed: _submit, child: Text(_isEditing ? 'saveChanges'.tr  : 'save'.tr)),
-                ),
-              ],
+        appBar: AppBar(title: Text(_isEditing ? 'editDebt'.tr : 'addDebt'.tr)),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  FormCard(
+                    children: [
+                      LedgerDropdownField<String>(
+                        label: 'direction'.tr,
+                        value: _direction,
+                        items: [
+                          DropdownMenuItem(value: 'payable', child: Text('iOweOthers'.tr)),
+                          DropdownMenuItem(value: 'receivable', child: Text('othersOweMe'.tr)),
+                        ],
+                        onChanged: (value) { _direction = value ?? _direction; _refreshUi(); },
+                      ),
+                      LedgerTextField(
+                        controller: _nameController,
+                        label: 'name'.tr,
+                        hint: _direction == 'payable' ? 'debtNamePayableHint'.tr  : 'debtNameReceivableHint'.tr,
+                        validator: (value) => value == null || value.trim().isEmpty ? 'enterName'.tr : null,
+                      ),
+                      LedgerTextField(
+                        controller: _amountController,
+                        label: 'amount'.tr,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        validator: (value) {
+                          final number = double.tryParse(value?.trim() ?? '');
+                          if (number == null || number <= 0) return 'enterPositiveAmount'.tr;
+                          return null;
+                        },
+                      ),
+                      LedgerDropdownField<String>(
+                        label: 'currency'.tr,
+                        value: _currency,
+                        items: kCurrencies.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (value) { _currency = value ?? _currency; _refreshUi(); },
+                      ),
+                      LedgerTextField(controller: _noteController, label: 'noteOptional'.tr, maxLines: 3),
+                      _DebtImagePicker(
+                        images: _imageBase64List,
+                        busy: _pickingImage,
+                        onPickFromGallery: () => _pickImage(ImageSource.gallery),
+                        onTakePhoto: () => _pickImage(ImageSource.camera),
+                        onRemove: (index) { _imageBase64List.removeAt(index); _refreshUi(); },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const _LocalImageNotice(),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: FilledButton(onPressed: _submit, child: Text(_isEditing ? 'saveChanges'.tr  : 'save'.tr)),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
     });
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    if (_imageBase64List.length >= 3) {
+      showAppToast('maxThreeImages'.tr, title: 'photoProof'.tr, icon: Icons.info_outline_rounded);
+      return;
+    }
+
     _pickingImage = true;
     _refreshUi();
     try {
       final encoded = await LocalImageCompressor.pickAndCompress(source: source);
       if (!mounted) return;
-      if (encoded != null) {
-        _imageBase64 = encoded;
+      if (encoded != null && encoded.trim().isNotEmpty) {
+        _imageBase64List = [..._imageBase64List, encoded].take(3).toList(growable: true);
         _refreshUi();
       }
     } catch (e) {
@@ -167,7 +172,7 @@ class _DebtFormPageState extends State<DebtFormPage> {
       amount: double.parse(_amountController.text.trim()),
       currency: _currency,
       note: _noteController.text.trim(),
-      imageBase64: _imageBase64,
+      imageBase64List: _imageBase64List,
       createdAt: existing?.createdAt,
     );
 
@@ -183,22 +188,23 @@ class _DebtFormPageState extends State<DebtFormPage> {
 
 class _DebtImagePicker extends StatelessWidget {
   const _DebtImagePicker({
-    required this.imageBase64,
+    required this.images,
     required this.busy,
     required this.onPickFromGallery,
     required this.onTakePhoto,
     required this.onRemove,
   });
 
-  final String imageBase64;
+  final List<String> images;
   final bool busy;
   final VoidCallback onPickFromGallery;
   final VoidCallback onTakePhoto;
-  final VoidCallback onRemove;
+  final ValueChanged<int> onRemove;
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = imageBase64.trim().isNotEmpty;
+    final hasImages = images.isNotEmpty;
+    final canAdd = images.length < 3;
 
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 4),
@@ -217,24 +223,21 @@ class _DebtImagePicker extends StatelessWidget {
                 Expanded(
                   child: Text('photoProof'.tr, style: const TextStyle(fontWeight: FontWeight.w800)),
                 ),
-                if (hasImage)
-                  TextButton.icon(
-                    onPressed: busy ? null : onRemove,
-                    icon: const Icon(Icons.close_rounded, size: 18),
-                    label: Text('remove'.tr),
-                  ),
+                Text(
+                  '${images.length}/3',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSubtle(context), fontWeight: FontWeight.w800),
+                ),
               ],
             ),
             const SizedBox(height: 8),
-            if (hasImage)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.memory(
-                  base64Decode(imageBase64),
-                  width: double.infinity,
-                  height: 150,
-                  fit: BoxFit.cover,
-                ),
+            if (hasImages)
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: List.generate(images.length, (index) => _DebtImagePreview(
+                      imageBase64: images[index],
+                      onRemove: busy ? null : () => onRemove(index),
+                    )),
               )
             else
               Text('imageProofDesc'.tr, style: TextStyle(color: AppTheme.textSubtle(context), height: 1.45)),
@@ -243,7 +246,7 @@ class _DebtImagePicker extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: busy ? null : onPickFromGallery,
+                    onPressed: busy || !canAdd ? null : onPickFromGallery,
                     icon: busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.photo_rounded),
                     label: Text('chooseFromAlbum'.tr),
                   ),
@@ -251,16 +254,68 @@ class _DebtImagePicker extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: busy ? null : onTakePhoto,
+                    onPressed: busy || !canAdd ? null : onTakePhoto,
                     icon: const Icon(Icons.photo_camera_rounded),
                     label: Text('takePhoto'.tr),
                   ),
                 ),
               ],
             ),
+            if (!canAdd) ...[
+              const SizedBox(height: 8),
+              Text('maxThreeImages'.tr, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
+            ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DebtImagePreview extends StatelessWidget {
+  const _DebtImagePreview({required this.imageBase64, required this.onRemove});
+
+  final String imageBase64;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget image;
+    try {
+      image = Image.memory(base64Decode(imageBase64), width: 96, height: 72, fit: BoxFit.cover);
+    } catch (_) {
+      image = Container(
+        width: 96,
+        height: 72,
+        alignment: Alignment.center,
+        color: AppTheme.textSubtle(context).withValues(alpha: 0.08),
+        child: Icon(Icons.broken_image_rounded, color: AppTheme.textSubtle(context)),
+      );
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(borderRadius: BorderRadius.circular(14), child: image),
+        Positioned(
+          top: -8,
+          right: -8,
+          child: InkWell(
+            onTap: onRemove,
+            borderRadius: BorderRadius.circular(99),
+            child: Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: AppTheme.cardColor(context),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 8, offset: const Offset(0, 3))],
+              ),
+              child: Icon(Icons.close_rounded, size: 16, color: AppTheme.textMain(context)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
