@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const primary = Color(0xFF2F6BFF);
+  static const primary = Color(0xFF4D5F91);
 
-  static const lightBackground = Color(0xFFF6F7FB);
+  static const lightBackground = Color(0xFFF6F5F1);
   static const lightCard = Colors.white;
   static const lightTextMain = Color(0xFF111827);
   static const lightTextSubtle = Color(0xFF7A8192);
 
-  static const darkBackground = Color(0xFF0F1420);
-  static const darkCard = Color(0xFF1B2230);
-  static const darkInput = Color(0xFF252D3C);
+  static const darkBackground = Color(0xFF11151D);
+  static const darkCard = Color(0xFF1B202A);
+  static const darkInput = Color(0xFF252B36);
   static const darkTextMain = Color(0xFFF7F8FC);
   static const darkTextSubtle = Color(0xFFA7B0C2);
 
@@ -19,7 +19,7 @@ class AppTheme {
       brightness: Brightness.light,
       scaffoldBackground: lightBackground,
       cardColor: lightCard,
-      inputFill: const Color(0xFFF4F6FA),
+      inputFill: const Color(0xFFF0EFEA),
       textMain: lightTextMain,
       textSubtle: lightTextSubtle,
     );
@@ -117,7 +117,7 @@ class AppTheme {
   }
 
   static Color cardColor(BuildContext context) => Theme.of(context).cardTheme.color ?? (isDark(context) ? darkCard : lightCard);
-  static Color inputColor(BuildContext context) => isDark(context) ? darkInput : const Color(0xFFF4F6FA);
+  static Color inputColor(BuildContext context) => isDark(context) ? darkInput : const Color(0xFFF0EFEA);
   static Color textMain(BuildContext context) => isDark(context) ? darkTextMain : lightTextMain;
   static Color textSubtle(BuildContext context) => isDark(context) ? darkTextSubtle : lightTextSubtle;
   static bool isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;

@@ -219,7 +219,10 @@ class _DebtImageThumbs extends StatelessWidget {
           final bytes = base64Decode(imageBase64);
           return ClipRRect(
             borderRadius: BorderRadius.circular(14),
-            child: Image.memory(bytes, width: 72, height: 54, fit: BoxFit.cover),
+            child: InkWell(
+              onTap: () => _showImagePreview(context, imageBase64),
+              child: Image.memory(bytes, width: 72, height: 54, fit: BoxFit.cover),
+            ),
           );
         } catch (_) {
           return const SizedBox.shrink();
@@ -363,18 +366,6 @@ class BillTile extends StatelessWidget {
   }
 }
 
-
-String _billMeta(BillItem item) {
-  final parts = <String>[
-    trBillCategory(item.category),
-  ];
-  if (item.assetName.trim().isNotEmpty) {
-    parts.add(item.assetName.trim());
-  }
-  parts.add(dateText(item.occurredAt));
-  return parts.join(' · ');
-}
-
 String _billTitle(BillItem item) {
   final note = item.note.trim();
   if (_billUsesNoteAsTitle(item)) {
@@ -387,6 +378,51 @@ bool _billUsesNoteAsTitle(BillItem item) {
   final note = item.note.trim();
   if (note.isEmpty) return false;
   return item.category == 'otherExpense' || item.category == 'otherIncome';
+}
+
+
+String _billMeta(BillItem item) {
+  final parts = <String>[trBillCategory(item.category)];
+  if (item.assetName.trim().isNotEmpty) {
+    parts.add(item.assetName.trim());
+  }
+  if (item.investmentAssetName.trim().isNotEmpty && item.investmentQuantity > 0) {
+    parts.add('${item.isIncome ? '-' : '+'}${trimNum(item.investmentQuantity)} ${item.investmentAssetName.trim()}');
+  }
+  parts.add(dateText(item.occurredAt));
+  return parts.join(' · ');
+}
+
+void _showImagePreview(BuildContext context, String imageBase64) {
+  try {
+    final bytes = base64Decode(imageBase64);
+    Get.dialog<void>(
+      Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Image.memory(bytes, fit: BoxFit.contain),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton.filled(
+                onPressed: () => Get.back<void>(),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  } catch (_) {
+    // Ignore broken local image data.
+  }
 }
 
 class _BillIcon extends StatelessWidget {

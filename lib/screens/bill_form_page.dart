@@ -24,11 +24,13 @@ class _BillFormPageState extends State<BillFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
+  final _investmentQuantityController = TextEditingController();
 
   String _type = 'expense';
   String _category = 'food';
   String _currency = 'CNY';
   String _assetId = '';
+  String _investmentAssetId = '';
   DateTime _occurredAt = DateTime.now();
   final RxInt _uiVersion = 0.obs;
 
@@ -45,6 +47,10 @@ class _BillFormPageState extends State<BillFormPage> {
       _amountController.text = trimNum(existing.amount);
       _currency = existing.currency;
       _assetId = existing.assetId;
+      _investmentAssetId = existing.investmentAssetId;
+      if (existing.investmentQuantity > 0) {
+        _investmentQuantityController.text = trimNum(existing.investmentQuantity);
+      }
       _noteController.text = existing.note;
       _occurredAt = existing.occurredAt;
     } else {
@@ -56,6 +62,7 @@ class _BillFormPageState extends State<BillFormPage> {
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _investmentQuantityController.dispose();
     super.dispose();
   }
 
@@ -69,12 +76,18 @@ class _BillFormPageState extends State<BillFormPage> {
       }
 
       final fundAssets = store.billLinkedAssets;
+      final investmentAssets = store.billLinkedInvestments;
       final selectedAsset = _findAssetById(fundAssets, _assetId);
+      final selectedInvestment = _findAssetById(investmentAssets, _investmentAssetId);
       if (_assetId.isNotEmpty && selectedAsset == null) {
         _assetId = '';
       }
       if (selectedAsset != null && _currency != selectedAsset.currency) {
         _currency = selectedAsset.currency;
+      }
+      if (_investmentAssetId.isNotEmpty && selectedInvestment == null) {
+        _investmentAssetId = '';
+        _investmentQuantityController.clear();
       }
 
       return Scaffold(
@@ -155,6 +168,39 @@ class _BillFormPageState extends State<BillFormPage> {
                         )
                       else
                         _ReadonlyValueField(label: 'currency'.tr, value: selectedAsset.currency),
+                      LedgerDropdownField<String>(
+                        label: 'linkedInvestment'.tr,
+                        value: _investmentAssetId,
+                        items: [
+                          DropdownMenuItem(value: '', child: Text('noLinkedInvestment'.tr)),
+                          ...investmentAssets.map((asset) {
+                            final symbol = asset.symbol.trim().isEmpty ? asset.name : asset.symbol.trim();
+                            return DropdownMenuItem(
+                              value: asset.id,
+                              child: Text('${asset.name} · $symbol · ${trimNum(asset.quantity)}'),
+                            );
+                          }),
+                        ],
+                        onChanged: (value) {
+                          _investmentAssetId = value ?? '';
+                          if (_investmentAssetId.isEmpty) {
+                            _investmentQuantityController.clear();
+                          }
+                          _refreshUi();
+                        },
+                      ),
+                      if (selectedInvestment != null)
+                        LedgerTextField(
+                          controller: _investmentQuantityController,
+                          label: 'investmentQuantity'.tr,
+                          hint: 'investmentQuantityHint'.tr,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          validator: (value) {
+                            final number = double.tryParse(value?.trim() ?? '');
+                            if (number == null || number <= 0) return 'enterPositiveNumber'.tr;
+                            return null;
+                          },
+                        ),
                       _DateField(
                         value: _occurredAt,
                         onTap: _pickDate,
@@ -203,6 +249,8 @@ class _BillFormPageState extends State<BillFormPage> {
     if (!_formKey.currentState!.validate()) return;
     final existing = widget.existing;
     final linkedAsset = _findAssetById(store.billLinkedAssets, _assetId);
+    final linkedInvestment = _findAssetById(store.billLinkedInvestments, _investmentAssetId);
+    final investmentQuantity = linkedInvestment == null ? 0.0 : double.parse(_investmentQuantityController.text.trim());
     final item = BillItem(
       id: existing?.id ?? newId(),
       type: _type,
@@ -211,6 +259,9 @@ class _BillFormPageState extends State<BillFormPage> {
       currency: linkedAsset?.currency ?? _currency,
       assetId: linkedAsset?.id ?? '',
       assetName: linkedAsset?.name ?? '',
+      investmentAssetId: linkedInvestment?.id ?? '',
+      investmentAssetName: linkedInvestment?.name ?? '',
+      investmentQuantity: investmentQuantity,
       note: _noteController.text.trim(),
       occurredAt: _occurredAt,
       createdAt: existing?.createdAt,
