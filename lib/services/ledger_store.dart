@@ -360,12 +360,18 @@ class LedgerStore extends GetxController {
     Get.changeThemeMode(_themeMode(settings.themeMode));
     final language = settings.languageMode;
     if (language == 'zh_Hant') {
-      Get.updateLocale(const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'));
-    } else if (language == 'zh' || language == 'en') {
-      Get.updateLocale(Locale(language));
+      Get.updateLocale(const Locale('zh', 'TW'));
+    } else if (language == 'zh') {
+      Get.updateLocale(const Locale('zh', 'CN'));
+    } else if (language == 'en') {
+      Get.updateLocale(const Locale('en'));
     } else {
       final code = _normalizeLanguageCode(Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale);
-      Get.updateLocale(code == 'zh_Hant' ? const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant') : Locale(code));
+      Get.updateLocale(switch (code) {
+        'zh_Hant' => const Locale('zh', 'TW'),
+        'zh_Hans' => const Locale('zh', 'CN'),
+        _ => Locale(code),
+      });
     }
   }
 
@@ -383,7 +389,7 @@ class LedgerStore extends GetxController {
       final script = locale?.scriptCode?.toLowerCase();
       final country = locale?.countryCode?.toLowerCase();
       if (script == 'hant' || country == 'tw' || country == 'hk' || country == 'mo') return 'zh_Hant';
-      return 'zh';
+      return 'zh_Hans';
     }
     return 'en';
   }

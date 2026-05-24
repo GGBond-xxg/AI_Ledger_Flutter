@@ -12,12 +12,22 @@ class TranslationService extends Translations {
   final Map<String, Map<String, String>> _keys;
 
   static const fallbackLocale = Locale('en');
+
+  // GetX is more reliable with country based locale keys (zh_CN / zh_TW)
+  // than script-only keys (zh_Hans / zh_Hant) on some Android devices.
+  // We still keep old keys for backward compatibility, but the app now
+  // actively uses zh_CN for Simplified and zh_TW for Traditional.
   static const supportedLocales = [
     Locale('en'),
-    Locale('zh'),
-    Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+    Locale('zh', 'CN'),
+    Locale('zh', 'TW'),
   ];
-  static const supportedLanguageCodes = ['en', 'zh', 'zh_Hant'];
+
+  static const _languageAssets = {
+    'en': 'en.json',
+    'zh_CN': 'zh.json',
+    'zh_TW': 'zh_Hant.json',
+  };
 
   static final Map<String, Map<String, dynamic>> rawValues = {};
 
@@ -26,11 +36,29 @@ class TranslationService extends Translations {
 
   static Future<TranslationService> load() async {
     final result = <String, Map<String, String>>{};
-    for (final code in supportedLanguageCodes) {
-      final raw = await rootBundle.loadString('assets/i18n/$code.json');
+    for (final entry in _languageAssets.entries) {
+      final raw = await rootBundle.loadString('assets/i18n/${entry.value}');
       final jsonMap = json.decode(raw) as Map<String, dynamic>;
-      rawValues[code] = jsonMap;
-      result[code] = jsonMap.map((key, value) => MapEntry(key, _stringify(value)));
+      final values = jsonMap.map((key, value) => MapEntry(key, _stringify(value)));
+      rawValues[entry.key] = jsonMap;
+      result[entry.key] = values;
+
+      // Backward compatible aliases. Existing saved settings may still use
+      // zh / zh_Hans / zh_Hant, but GetMaterialApp will now use zh_CN / zh_TW.
+      if (entry.key == 'zh_CN') {
+        result['zh'] = values;
+        result['zh_Hans'] = values;
+        rawValues['zh'] = jsonMap;
+        rawValues['zh_Hans'] = jsonMap;
+      }
+      if (entry.key == 'zh_TW') {
+        result['zh_Hant'] = values;
+        result['zh_HK'] = values;
+        result['zh_MO'] = values;
+        rawValues['zh_Hant'] = jsonMap;
+        rawValues['zh_HK'] = jsonMap;
+        rawValues['zh_MO'] = jsonMap;
+      }
     }
     return TranslationService._(result);
   }
@@ -41,7 +69,7 @@ class TranslationService extends Translations {
       final script = locale?.scriptCode?.toLowerCase();
       final country = locale?.countryCode?.toLowerCase();
       if (script == 'hant' || country == 'tw' || country == 'hk' || country == 'mo') return 'zh_Hant';
-      return 'zh';
+      return 'zh_Hans';
     }
     return 'en';
   }
@@ -54,8 +82,8 @@ class TranslationService extends Translations {
   /// falls back to English.
   static Locale localeFromMode(String mode) {
     return switch (mode) {
-      'zh' => const Locale('zh'),
-      'zh_Hant' => const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+      'zh' || 'zh_Hans' || 'zh_CN' => const Locale('zh', 'CN'),
+      'zh_Hant' || 'zh_TW' || 'zh_HK' || 'zh_MO' => const Locale('zh', 'TW'),
       'en' => const Locale('en'),
       _ => currentDeviceLocale(),
     };
@@ -63,7 +91,11 @@ class TranslationService extends Translations {
 
   static Locale currentDeviceLocale() {
     final code = normalizeLanguageCode(Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale);
-    return code == 'zh_Hant' ? const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant') : Locale(code);
+    return switch (code) {
+      'zh_Hant' => const Locale('zh', 'TW'),
+      'zh_Hans' => const Locale('zh', 'CN'),
+      _ => Locale(code),
+    };
   }
 
   static String _stringify(dynamic value) {

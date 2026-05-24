@@ -55,6 +55,7 @@ const List<MarketOption> kMarketCatalog = [
   MarketOption(assetType: 'cn_stock', name: '宁德时代', symbol: '300750', displayCode: '300750', quoteCurrency: 'CNY', aliases: ['宁德', '宁德时代', 'catl']),
   MarketOption(assetType: 'cn_stock', name: '中国平安', symbol: '601318', displayCode: '601318', quoteCurrency: 'CNY', aliases: ['中国平安', '平安保险']),
   MarketOption(assetType: 'cn_stock', name: '招商银行', symbol: '600036', displayCode: '600036', quoteCurrency: 'CNY', aliases: ['招行', '招商银行']),
+  MarketOption(assetType: 'cn_stock', name: '邮储银行', symbol: '601658', displayCode: '601658', quoteCurrency: 'CNY', aliases: ['邮储', '邮储银行', 'psbc']),
   MarketOption(assetType: 'cn_stock', name: '五粮液', symbol: '000858', displayCode: '000858', quoteCurrency: 'CNY', aliases: ['五粮液']),
   MarketOption(assetType: 'cn_stock', name: '比亚迪', symbol: '002594', displayCode: '002594', quoteCurrency: 'CNY', aliases: ['比亚迪', 'byd']),
   MarketOption(assetType: 'cn_stock', name: '迈瑞医疗', symbol: '300760', displayCode: '300760', quoteCurrency: 'CNY', aliases: ['迈瑞', '迈瑞医疗']),
@@ -72,6 +73,10 @@ const List<MarketOption> kMarketCatalog = [
 
 List<MarketOption> marketSuggestionsFor(String assetType, String query, {int limit = 3}) {
   final matches = kMarketCatalog.where((item) => item.assetType == assetType && item.matches(query)).toList();
+  final typedAshare = typedCnMarketOption(assetType, query);
+  if (typedAshare != null && !matches.any((item) => item.exactMatches(typedAshare.displayCode))) {
+    matches.add(typedAshare);
+  }
 
   matches.sort((a, b) {
     final q = query.trim().toLowerCase();
@@ -99,8 +104,38 @@ MarketOption? exactMarketOption(String assetType, String query) {
   for (final option in kMarketCatalog.where((item) => item.assetType == assetType)) {
     if (option.exactMatches(q)) return option;
   }
+  return typedCnMarketOption(assetType, q);
+}
+
+MarketOption? typedCnMarketOption(String assetType, String query) {
+  if (assetType != 'cn_stock' && assetType != 'cn_etf') return null;
+  final code = _normalizeCnCode(query);
+  if (code == null) return null;
+  return MarketOption(
+    assetType: assetType,
+    name: code,
+    symbol: code,
+    displayCode: code,
+    quoteCurrency: 'CNY',
+    aliases: [code, _withCnExchangePrefix(code), _withCnExchangeSuffix(code)],
+  );
+}
+
+String? _normalizeCnCode(String value) {
+  var q = value.trim().toUpperCase();
+  if (q.isEmpty) return null;
+  q = q.replaceAll(RegExp(r'[^0-9A-Z.]'), '');
+  final suffixMatch = RegExp(r'^(\d{6})\.(SH|SZ)$').firstMatch(q);
+  if (suffixMatch != null) return suffixMatch.group(1);
+  final prefixMatch = RegExp(r'^(SH|SZ)(\d{6})$').firstMatch(q);
+  if (prefixMatch != null) return prefixMatch.group(2);
+  if (RegExp(r'^\d{6}$').hasMatch(q)) return q;
   return null;
 }
+
+String _withCnExchangePrefix(String code) => '${_cnExchange(code)}$code';
+String _withCnExchangeSuffix(String code) => '$code.${_cnExchange(code)}';
+String _cnExchange(String code) => code.startsWith('6') || code.startsWith('5') || code.startsWith('9') ? 'SH' : 'SZ';
 
 List<MarketOption> mergeMarketSuggestions(List<MarketOption> local, List<MarketOption> remote, {int limit = 3}) {
   final map = <String, MarketOption>{};

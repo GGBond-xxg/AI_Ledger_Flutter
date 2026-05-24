@@ -68,6 +68,10 @@ class _AssetFormPageState extends State<AssetFormPage> {
     } else if (widget.investmentDefault) {
       _currency = 'USD';
     }
+    final allowedTypes = _typeOptions();
+    if (!allowedTypes.contains(_type)) {
+      _type = allowedTypes.first;
+    }
     _scheduleRemoteSearch(immediate: true);
   }
 
@@ -108,16 +112,9 @@ class _AssetFormPageState extends State<AssetFormPage> {
                     LedgerDropdownField<String>(
                       label: 'type'.tr,
                       value: _type,
-                      items: [
-                        DropdownMenuItem(value: 'cash', child: Text('cashType'.tr)),
-                        DropdownMenuItem(value: 'manual', child: Text('manualType'.tr)),
-                        DropdownMenuItem(value: 'crypto', child: Text('cryptoType'.tr)),
-                        DropdownMenuItem(value: 'metal', child: Text('metalType'.tr)),
-                        DropdownMenuItem(value: 'stock', child: Text('stockType'.tr)),
-                        DropdownMenuItem(value: 'etf', child: Text('etfType'.tr)),
-                        DropdownMenuItem(value: 'cn_stock', child: Text('cnStockType'.tr)),
-                        DropdownMenuItem(value: 'cn_etf', child: Text('cnEtfType'.tr)),
-                      ],
+                      items: _typeOptions()
+                          .map((value) => DropdownMenuItem(value: value, child: Text(_typeLabel(value))))
+                          .toList(),
                       onChanged: (value) {
                         if (value == null) return;
                         _type = value;
@@ -210,6 +207,14 @@ class _AssetFormPageState extends State<AssetFormPage> {
     });
   }
 
+  bool get _formForInvestment => widget.existing?.isInvestment ?? widget.investmentDefault;
+
+  List<String> _typeOptions() => _formForInvestment
+      ? const ['stock', 'etf', 'cn_stock', 'cn_etf', 'metal', 'crypto']
+      : const ['cash', 'manual'];
+
+  String _typeLabel(String type) => trAssetType(type);
+
   String _title() {
     if (_isEditing) return widget.existing!.isInvestment ? 'editInvestment'.tr : 'editAsset'.tr;
     return widget.investmentDefault ? 'addInvestment'.tr : 'addAsset'.tr;
@@ -234,7 +239,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
     _searchDebounce?.cancel();
     if (!_needsMarketSuggestions) return;
 
-    final query = _currentQuery();
+    final query = _remoteSearchQuery();
     final canSearchRemote = store.settings.apiBaseUrl.trim().isNotEmpty &&
         store.settings.apiToken.trim().isNotEmpty &&
         ['stock', 'etf', 'crypto', 'cn_stock', 'cn_etf'].contains(_type);
@@ -268,9 +273,29 @@ class _AssetFormPageState extends State<AssetFormPage> {
         : (nameText.isNotEmpty ? nameText : symbolText);
   }
 
+  String _remoteSearchQuery() {
+    final nameText = _nameController.text.trim();
+    final symbolText = _symbolController.text.trim();
+    // For A shares, symbol/code input is usually more reliable than name.
+    // This keeps codes like 601658 / SH601658 / 000001.SZ searchable even
+    // after the name field is auto-filled or left blank.
+    if ((_type == 'cn_stock' || _type == 'cn_etf') && symbolText.isNotEmpty) {
+      return symbolText;
+    }
+    return _currentQuery();
+  }
+
   List<MarketOption> _marketSuggestions() {
     if (!_needsMarketSuggestions) return const [];
-    return mergeMarketSuggestions(marketSuggestionsFor(_type, _currentQuery(), limit: 3), _remoteSuggestions, limit: 3);
+
+    final local = <MarketOption>[];
+    final seenQueries = <String>{};
+    for (final query in [_currentQuery(), _symbolController.text.trim(), _nameController.text.trim()]) {
+      if (query.isEmpty || !seenQueries.add(query)) continue;
+      local.addAll(marketSuggestionsFor(_type, query, limit: 3));
+    }
+
+    return mergeMarketSuggestions(local, _remoteSuggestions, limit: 3);
   }
 
   void _applyMarketOption(MarketOption option, {bool notify = true}) {

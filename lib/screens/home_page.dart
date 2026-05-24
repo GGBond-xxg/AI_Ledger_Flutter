@@ -54,9 +54,20 @@ class _HomePageState extends State<HomePage> {
 
       return Scaffold(
         floatingActionButton: FloatingActionButton(
-          onPressed: () => store.selectedMainTab.value == 0
-              ? _openBillForm()
-              : _showAssetAddSheet(),
+          onPressed: () {
+            if (store.selectedMainTab.value == 0) {
+              _openBillForm();
+              return;
+            }
+            final assetTab = store.selectedAssetTab.value;
+            if (assetTab == 0) {
+              _openAssetForm(false);
+            } else if (assetTab == 1) {
+              _openAssetForm(true);
+            } else {
+              _openDebtForm();
+            }
+          },
           child: const Icon(Icons.add_rounded, size: 30),
         ),
         bottomNavigationBar: SafeArea(
