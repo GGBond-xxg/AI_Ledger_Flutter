@@ -10,7 +10,6 @@ import '../models/asset_item.dart';
 import '../models/bill_item.dart';
 import '../models/debt_item.dart';
 import '../services/ledger_store.dart';
-import '../widgets/add_action_sheet.dart';
 import '../widgets/common_cards.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/tile_widgets.dart';
@@ -141,31 +140,6 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     });
-  }
-
-  void _showAssetAddSheet() {
-    Get.bottomSheet(
-      AddActionSheet(
-        onAddAsset: () {
-          Get.back<void>();
-          _openAssetForm(false);
-        },
-        onAddInvestment: () {
-          Get.back<void>();
-          _openAssetForm(true);
-        },
-        onAddDebt: () {
-          Get.back<void>();
-          _openDebtForm();
-        },
-        onRefresh: () {
-          Get.back<void>();
-          store.refreshValuation(force: true, source: 'addSheetRefresh');
-        },
-      ),
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-    );
   }
 
   Future<void> _openBillForm({BillItem? existing}) async {
