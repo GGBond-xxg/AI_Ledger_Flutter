@@ -30,8 +30,7 @@ class TranslationService extends Translations {
       final raw = await rootBundle.loadString('assets/i18n/$code.json');
       final jsonMap = json.decode(raw) as Map<String, dynamic>;
       rawValues[code] = jsonMap;
-      result[code] =
-          jsonMap.map((key, value) => MapEntry(key, _stringify(value)));
+      result[code] = jsonMap.map((key, value) => MapEntry(key, _stringify(value)));
     }
     return TranslationService._(result);
   }
@@ -41,10 +40,7 @@ class TranslationService extends Translations {
     if (code.startsWith('zh')) {
       final script = locale?.scriptCode?.toLowerCase();
       final country = locale?.countryCode?.toLowerCase();
-      if (script == 'hant' ||
-          country == 'tw' ||
-          country == 'hk' ||
-          country == 'mo') return 'zh_Hant';
+      if (script == 'hant' || country == 'tw' || country == 'hk' || country == 'mo') return 'zh_Hant';
       return 'zh';
     }
     return 'en';
@@ -59,19 +55,15 @@ class TranslationService extends Translations {
   static Locale localeFromMode(String mode) {
     return switch (mode) {
       'zh' => const Locale('zh'),
-      'zh_Hant' =>
-        const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+      'zh_Hant' => const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
       'en' => const Locale('en'),
       _ => currentDeviceLocale(),
     };
   }
 
   static Locale currentDeviceLocale() {
-    final code = normalizeLanguageCode(
-        Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale);
-    return code == 'zh_Hant'
-        ? const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')
-        : Locale(code);
+    final code = normalizeLanguageCode(Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale);
+    return code == 'zh_Hant' ? const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant') : Locale(code);
   }
 
   static String _stringify(dynamic value) {
@@ -86,25 +78,17 @@ extension TranslationListExtension on String {
   List<String> get trList {
     final value = tr;
     if (value.trim().isEmpty || value == this) return const [];
-    return value
-        .split('|')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList(growable: false);
+    return value.split('|').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(growable: false);
   }
 }
 
-String trEstimateIn(String currency) =>
-    'estimateIn'.trParams({'currency': currency});
+String trEstimateIn(String currency) => 'estimateIn'.trParams({'currency': currency});
 
-String trPartialQuoteFailed(String names) =>
-    'partialQuoteFailed'.trParams({'names': names});
+String trPartialQuoteFailed(String names) => 'partialQuoteFailed'.trParams({'names': names});
 
-String trDeleteCannotRecover(String title) =>
-    'deleteCannotRecover'.trParams({'title': title});
+String trDeleteCannotRecover(String title) => 'deleteCannotRecover'.trParams({'title': title});
 
-String trImageLoadFailed(String error) =>
-    'imageLoadFailed'.trParams({'error': error});
+String trImageLoadFailed(String error) => 'imageLoadFailed'.trParams({'error': error});
 
 String trUnitPrice(String price, String? quoteCurrency) {
   final quotePart = quoteCurrency == null ? '' : ' · $quoteCurrency';
@@ -178,6 +162,7 @@ String trSymbolHelp(String type) {
   };
 }
 
+
 String trMetalUnit(String unit) {
   return switch (unit) {
     'gram' => 'unitGram'.tr,
@@ -188,9 +173,7 @@ String trMetalUnit(String unit) {
 
 String trMarketOptionName(MarketOption item) {
   if (item.assetType == 'metal') {
-    final code = item.displayCode.trim().isNotEmpty
-        ? item.displayCode.trim().toUpperCase()
-        : item.symbol.trim().toUpperCase();
+    final code = item.displayCode.trim().isNotEmpty ? item.displayCode.trim().toUpperCase() : item.symbol.trim().toUpperCase();
     return switch (code) {
       'XAU' => 'metalGoldName'.tr,
       'XAG' => 'metalSilverName'.tr,

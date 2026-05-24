@@ -13,6 +13,7 @@
   "notRefreshed": "未刷新",
   "assetsDesc": "现金、银行卡、手动估值资产。",
   "investmentsDesc": "股票、ETF、A股、A股ETF、贵金属、虚拟币。",
+  "debtsDesc": "我欠别人、别人欠我、本地凭证。",
   "emptyAssetsTitle": "还没有添加资产",
   "emptyAssetsSubtitle": "先记录银行卡、现金或手动估值资产，净资产卡片会自动汇总。",
   "emptyInvestmentsTitle": "还没有添加理财资产",
@@ -45,8 +46,8 @@
   "manualShort": "手动估值",
   "cryptoType": "虚拟币",
   "metalType": "贵金属",
-  "stockType": "美股",
-  "etfType": "美股 ETF",
+  "stockType": "股票",
+  "etfType": "ETF",
   "iOweOthers": "欠款",
   "othersOweMe": "借款",
   "addCashSubtitle": "现金、银行卡、手动估值资产",
@@ -276,7 +277,6 @@
   "noLinkedInvestment": "不关联理财",
   "investmentQuantity": "理财数量",
   "investmentQuantityHint": "例如 100",
-<<<<<<< HEAD
   "sortHint": "长按右侧拖动可调整排序",
   "traditionalChinese": "繁体中文",
   "cnStockType": "A股",
@@ -289,7 +289,4 @@
   "cnEtfHelp": "A股ETF支持沪深300ETF、上证50ETF、科创50ETF、创业板ETF 等，也支持远程搜索。",
   "noCnStockMatch": "没有匹配到常用 A股。配置 API 后可远程搜索；也可以手动输入股票代码。",
   "noCnEtfMatch": "没有匹配到常用 A股ETF。配置 API 后可远程搜索；也可以手动输入 ETF 代码。"
-=======
-  "sortHint": "长按右侧拖动可调整排序"
->>>>>>> edc88763fe8dc5d5d3245dbdf724f1ca17928c19
 }

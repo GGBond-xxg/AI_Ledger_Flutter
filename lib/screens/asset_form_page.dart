@@ -38,8 +38,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
   final _manualPriceController = TextEditingController();
   final _noteController = TextEditingController();
 
-  late String _type =
-      widget.existing?.type ?? (widget.investmentDefault ? 'stock' : 'cash');
+  late String _type = widget.existing?.type ?? (widget.investmentDefault ? 'stock' : 'cash');
   String _currency = 'CNY';
   String _unit = 'gram';
   String _lastEditedField = 'name';
@@ -62,8 +61,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
       _nameController.text = existing.name;
       _symbolController.text = existing.symbol;
       _quantityController.text = trimNum(existing.quantity);
-      _manualPriceController.text =
-          trimNum(existing.manualPrice == 0 ? 1 : existing.manualPrice);
+      _manualPriceController.text = trimNum(existing.manualPrice == 0 ? 1 : existing.manualPrice);
       _noteController.text = existing.note;
       _currency = existing.currency;
       _unit = existing.unit.isEmpty ? 'gram' : existing.unit;
@@ -84,184 +82,136 @@ class _AssetFormPageState extends State<AssetFormPage> {
     super.dispose();
   }
 
-  bool get _needsSymbol =>
-      ['crypto', 'metal', 'stock', 'etf', 'cn_stock', 'cn_etf'].contains(_type);
-  bool get _needsMarketSuggestions =>
-      ['crypto', 'metal', 'stock', 'etf', 'cn_stock', 'cn_etf'].contains(_type);
+  bool get _needsSymbol => ['crypto', 'metal', 'stock', 'etf', 'cn_stock', 'cn_etf'].contains(_type);
+  bool get _needsMarketSuggestions => ['crypto', 'metal', 'stock', 'etf', 'cn_stock', 'cn_etf'].contains(_type);
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       _uiVersion.value;
       final needsManualPrice = _type == 'manual';
-      final needsCurrency = ['cash', 'manual'].contains(_type);
-      final suggestions = _marketSuggestions();
+    final needsCurrency = ['cash', 'manual'].contains(_type);
+    final suggestions = _marketSuggestions();
 
       return Scaffold(
-        appBar: AppBar(title: Text(_title())),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FormCard(
-                    children: [
+      appBar: AppBar(title: Text(_title())),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FormCard(
+                  children: [
+                    LedgerDropdownField<String>(
+                      label: 'type'.tr,
+                      value: _type,
+                      items: [
+                        DropdownMenuItem(value: 'cash', child: Text('cashType'.tr)),
+                        DropdownMenuItem(value: 'manual', child: Text('manualType'.tr)),
+                        DropdownMenuItem(value: 'crypto', child: Text('cryptoType'.tr)),
+                        DropdownMenuItem(value: 'metal', child: Text('metalType'.tr)),
+                        DropdownMenuItem(value: 'stock', child: Text('stockType'.tr)),
+                        DropdownMenuItem(value: 'etf', child: Text('etfType'.tr)),
+                        DropdownMenuItem(value: 'cn_stock', child: Text('cnStockType'.tr)),
+                        DropdownMenuItem(value: 'cn_etf', child: Text('cnEtfType'.tr)),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        _type = value;
+                        _currency = (value == 'cash' || value == 'cn_stock' || value == 'cn_etf') ? 'CNY' : 'USD';
+                        _unit = 'gram';
+                        _lastEditedField = 'name';
+                        _nameController.text = trDefaultName(value);
+                        _symbolController.text = '';
+                        _remoteSuggestions = const [];
+                        _refreshUi();
+                        _scheduleRemoteSearch(immediate: true);
+                      },
+                    ),
+                    LedgerTextField(
+                      controller: _nameController,
+                      label: 'name'.tr,
+                      hint: trNameHint(_type),
+                      onChanged: (_) => _handleFieldChanged('name'),
+                      validator: (value) => value == null || value.trim().isEmpty ? 'enterName'.tr : null,
+                    ),
+                    if (_needsSymbol)
+                      LedgerTextField(
+                        controller: _symbolController,
+                        label: _type == 'crypto' ? 'cryptoSymbol'.tr : 'symbol'.tr,
+                        hint: trSymbolHint(_type),
+                        onChanged: (_) => _handleFieldChanged('symbol'),
+                        validator: (value) => value == null || value.trim().isEmpty ? 'enterSymbol'.tr : null,
+                      ),
+                    if (_needsMarketSuggestions)
+                      _MarketSuggestionBox(
+                        type: _type,
+                        suggestions: suggestions,
+                        searching: _searchingRemote,
+                        onSelected: _applyMarketOption,
+                      ),
+                    LedgerTextField(
+                      controller: _quantityController,
+                      label: _type == 'cash' ? 'amount'.tr  : 'quantity'.tr,
+                      hint: _type == 'cash' ? 'amountHintCash'.tr  : 'quantityHint'.tr,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (value) {
+                        final number = double.tryParse(value?.trim() ?? '');
+                        if (number == null || number <= 0) return 'enterPositiveNumber'.tr;
+                        return null;
+                      },
+                    ),
+                    if (needsCurrency)
                       LedgerDropdownField<String>(
-                        label: 'type'.tr,
-                        value: _type,
-                        items: [
-                          DropdownMenuItem(
-                              value: 'cash', child: Text('cashType'.tr)),
-                          DropdownMenuItem(
-                              value: 'manual', child: Text('manualType'.tr)),
-                          DropdownMenuItem(
-                              value: 'crypto', child: Text('cryptoType'.tr)),
-                          DropdownMenuItem(
-                              value: 'metal', child: Text('metalType'.tr)),
-                          DropdownMenuItem(
-                              value: 'stock', child: Text('stockType'.tr)),
-                          DropdownMenuItem(
-                              value: 'etf', child: Text('etfType'.tr)),
-                          DropdownMenuItem(
-                              value: 'cn_stock', child: Text('cnStockType'.tr)),
-                          DropdownMenuItem(
-                              value: 'cn_etf', child: Text('cnEtfType'.tr)),
-                        ],
-                        onChanged: (value) {
-                          if (value == null) return;
-                          _type = value;
-                          _currency = (value == 'cash' ||
-                                  value == 'cn_stock' ||
-                                  value == 'cn_etf')
-                              ? 'CNY'
-                              : 'USD';
-                          _unit = 'gram';
-                          _lastEditedField = 'name';
-                          _nameController.text = trDefaultName(value);
-                          _symbolController.text = '';
-                          _remoteSuggestions = const [];
-                          _refreshUi();
-                          _scheduleRemoteSearch(immediate: true);
-                        },
+                        label: 'currency'.tr,
+                        value: _currency,
+                        items: kCurrencies.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (value) { _currency = value ?? _currency; _refreshUi(); },
                       ),
-                      LedgerTextField(
-                        controller: _nameController,
-                        label: 'name'.tr,
-                        hint: trNameHint(_type),
-                        onChanged: (_) => _handleFieldChanged('name'),
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
-                                ? 'enterName'.tr
-                                : null,
+                    if (_type == 'metal')
+                      LedgerDropdownField<String>(
+                        label: 'unit'.tr,
+                        value: _unit,
+                        items: kMetalUnits.map((e) => DropdownMenuItem(value: e, child: Text(trMetalUnit(e)))).toList(),
+                        onChanged: (value) { _unit = value ?? _unit; _refreshUi(); },
                       ),
-                      if (_needsSymbol)
-                        LedgerTextField(
-                          controller: _symbolController,
-                          label: _type == 'crypto'
-                              ? 'cryptoSymbol'.tr
-                              : 'symbol'.tr,
-                          hint: trSymbolHint(_type),
-                          onChanged: (_) => _handleFieldChanged('symbol'),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                                  ? 'enterSymbol'.tr
-                                  : null,
-                        ),
-                      if (_needsMarketSuggestions)
-                        _MarketSuggestionBox(
-                          type: _type,
-                          suggestions: suggestions,
-                          searching: _searchingRemote,
-                          onSelected: _applyMarketOption,
-                        ),
+                    if (needsManualPrice)
                       LedgerTextField(
-                        controller: _quantityController,
-                        label: _type == 'cash' ? 'amount'.tr : 'quantity'.tr,
-                        hint: _type == 'cash'
-                            ? 'amountHintCash'.tr
-                            : 'quantityHint'.tr,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
+                        controller: _manualPriceController,
+                        label: 'manualPrice'.tr,
+                        hint: 'manualPriceHint'.tr,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
                           final number = double.tryParse(value?.trim() ?? '');
-                          if (number == null || number <= 0)
-                            return 'enterPositiveNumber'.tr;
+                          if (number == null || number < 0) return 'enterValidPrice'.tr;
                           return null;
                         },
                       ),
-                      if (needsCurrency)
-                        LedgerDropdownField<String>(
-                          label: 'currency'.tr,
-                          value: _currency,
-                          items: kCurrencies
-                              .map((e) =>
-                                  DropdownMenuItem(value: e, child: Text(e)))
-                              .toList(),
-                          onChanged: (value) {
-                            _currency = value ?? _currency;
-                            _refreshUi();
-                          },
-                        ),
-                      if (_type == 'metal')
-                        LedgerDropdownField<String>(
-                          label: 'unit'.tr,
-                          value: _unit,
-                          items: kMetalUnits
-                              .map((e) => DropdownMenuItem(
-                                  value: e, child: Text(trMetalUnit(e))))
-                              .toList(),
-                          onChanged: (value) {
-                            _unit = value ?? _unit;
-                            _refreshUi();
-                          },
-                        ),
-                      if (needsManualPrice)
-                        LedgerTextField(
-                          controller: _manualPriceController,
-                          label: 'manualPrice'.tr,
-                          hint: 'manualPriceHint'.tr,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          validator: (value) {
-                            final number = double.tryParse(value?.trim() ?? '');
-                            if (number == null || number < 0)
-                              return 'enterValidPrice'.tr;
-                            return null;
-                          },
-                        ),
-                      LedgerTextField(
-                          controller: _noteController,
-                          label: 'noteOptional'.tr,
-                          maxLines: 3),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  _HelpBox(text: trSymbolHelp(_type)),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: FilledButton(
-                        onPressed: _submit,
-                        child: Text(_isEditing ? 'saveChanges'.tr : 'save'.tr)),
-                  ),
-                ],
-              ),
+                    LedgerTextField(controller: _noteController, label: 'noteOptional'.tr, maxLines: 3),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _HelpBox(text: trSymbolHelp(_type)),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(onPressed: _submit, child: Text(_isEditing ? 'saveChanges'.tr  : 'save'.tr)),
+                ),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    );
     });
   }
 
   String _title() {
-    if (_isEditing)
-      return widget.existing!.isInvestment
-          ? 'editInvestment'.tr
-          : 'editAsset'.tr;
+    if (_isEditing) return widget.existing!.isInvestment ? 'editInvestment'.tr : 'editAsset'.tr;
     return widget.investmentDefault ? 'addInvestment'.tr : 'addAsset'.tr;
   }
 
@@ -269,9 +219,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
     if (_applyingSuggestion || !_needsMarketSuggestions) return;
 
     _lastEditedField = field;
-    final text = field == 'symbol'
-        ? _symbolController.text.trim()
-        : _nameController.text.trim();
+    final text = field == 'symbol' ? _symbolController.text.trim() : _nameController.text.trim();
     final exact = exactMarketOption(_type, text);
 
     if (text.isNotEmpty && exact != null) {
@@ -294,9 +242,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
     if (!canSearchRemote) return;
     if (_type != 'crypto' && query.trim().isEmpty) return;
 
-    _searchDebounce =
-        Timer(immediate ? Duration.zero : const Duration(milliseconds: 450),
-            () async {
+    _searchDebounce = Timer(immediate ? Duration.zero : const Duration(milliseconds: 450), () async {
       if (!mounted) return;
       _searchingRemote = true;
       _refreshUi();
@@ -324,10 +270,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
 
   List<MarketOption> _marketSuggestions() {
     if (!_needsMarketSuggestions) return const [];
-    return mergeMarketSuggestions(
-        marketSuggestionsFor(_type, _currentQuery(), limit: 3),
-        _remoteSuggestions,
-        limit: 3);
+    return mergeMarketSuggestions(marketSuggestionsFor(_type, _currentQuery(), limit: 3), _remoteSuggestions, limit: 3);
   }
 
   void _applyMarketOption(MarketOption option, {bool notify = true}) {
@@ -372,6 +315,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
     await store.refreshValuation(force: true, source: 'assetSaved');
     if (mounted) Get.back<void>();
   }
+
 }
 
 class _MarketSuggestionBox extends StatelessWidget {
@@ -405,31 +349,21 @@ class _MarketSuggestionBox extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text('suggestions'.tr,
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.textSubtle(context),
-                        fontWeight: FontWeight.w800)),
+                Text('suggestions'.tr, style: TextStyle(fontSize: 13, color: AppTheme.textSubtle(context), fontWeight: FontWeight.w800)),
                 const Spacer(),
                 if (searching)
                   SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: theme.colorScheme.primary),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary),
                   ),
               ],
             ),
             const SizedBox(height: 10),
             if (suggestions.isEmpty && !searching)
-              Text(_emptyText(context, type),
-                  style: TextStyle(
-                      color: AppTheme.textSubtle(context),
-                      fontSize: 13,
-                      height: 1.4))
+              Text(_emptyText(context, type), style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 13, height: 1.4))
             else
-              ...suggestions.map((item) =>
-                  _SuggestionTile(item: item, onTap: () => onSelected(item))),
+              ...suggestions.map((item) => _SuggestionTile(item: item, onTap: () => onSelected(item))),
           ],
         ),
       ),
@@ -469,17 +403,8 @@ class _SuggestionTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
-                    item.displayCode.isEmpty
-                        ? '?'
-                        : item.displayCode.substring(
-                            0,
-                            item.displayCode.length > 4
-                                ? 4
-                                : item.displayCode.length),
-                    style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11),
+                    item.displayCode.isEmpty ? '?' : item.displayCode.substring(0, item.displayCode.length > 4 ? 4 : item.displayCode.length),
+                    style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 11),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -487,23 +412,14 @@ class _SuggestionTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(trMarketOptionName(item),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w900)),
+                      Text(trMarketOptionName(item), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
                       const SizedBox(height: 2),
-                      Text(_subtitle(item),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textSubtle(context))),
+                      Text(_subtitle(item), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: AppTheme.textSubtle(context))),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.add_circle_outline_rounded,
-                    size: 20, color: AppTheme.textSubtle(context)),
+                Icon(Icons.add_circle_outline_rounded, size: 20, color: AppTheme.textSubtle(context)),
               ],
             ),
           ),
@@ -531,11 +447,8 @@ class _HelpBox extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(18)),
-      child: Text(text,
-          style: TextStyle(color: AppTheme.textSubtle(context), height: 1.5)),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(18)),
+      child: Text(text, style: TextStyle(color: AppTheme.textSubtle(context), height: 1.5)),
     );
   }
 }
