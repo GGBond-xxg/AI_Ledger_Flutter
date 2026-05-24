@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 class AppTheme {
   static const primary = Color(0xFF4D5F91);
 
-  static const lightBackground = Colors.white;
-  static const lightCard = Color(0xFFF8FAFC);
+  static const lightBackground = Color(0xFFF6F5F1);
+  static const lightCard = Colors.white;
   static const lightTextMain = Color(0xFF111827);
   static const lightTextSubtle = Color(0xFF7A8192);
 
@@ -19,7 +19,7 @@ class AppTheme {
       brightness: Brightness.light,
       scaffoldBackground: lightBackground,
       cardColor: lightCard,
-      inputFill: const Color(0xFFF3F5F8),
+      inputFill: const Color(0xFFF0EFEA),
       textMain: lightTextMain,
       textSubtle: lightTextSubtle,
     );
@@ -44,16 +44,18 @@ class AppTheme {
     required Color textMain,
     required Color textSubtle,
   }) {
-    final colorScheme = ColorScheme.fromSeed(seedColor: primary, brightness: brightness);
+    final colorScheme =
+        ColorScheme.fromSeed(seedColor: primary, brightness: brightness);
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       scaffoldBackgroundColor: scaffoldBackground,
       colorScheme: colorScheme,
-      textTheme: Typography.material2021(platform: TargetPlatform.android).black.apply(
-            bodyColor: textMain,
-            displayColor: textMain,
-          ),
+      textTheme:
+          Typography.material2021(platform: TargetPlatform.android).black.apply(
+                bodyColor: textMain,
+                displayColor: textMain,
+              ),
       appBarTheme: AppBarTheme(
         backgroundColor: scaffoldBackground,
         surfaceTintColor: Colors.transparent,
@@ -86,9 +88,11 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: colorScheme.primary.withValues(alpha: 0.38), width: 1.2),
+          borderSide: BorderSide(
+              color: colorScheme.primary.withValues(alpha: 0.38), width: 1.2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         labelStyle: TextStyle(color: textSubtle),
         hintStyle: TextStyle(color: textSubtle.withValues(alpha: 0.78)),
       ),
@@ -107,8 +111,11 @@ class AppTheme {
         textStyle: TextStyle(color: textMain),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: brightness == Brightness.dark ? const Color(0xFF1F2937) : Colors.white,
-        contentTextStyle: TextStyle(color: textMain, fontWeight: FontWeight.w700),
+        backgroundColor: brightness == Brightness.dark
+            ? const Color(0xFF1F2937)
+            : Colors.white,
+        contentTextStyle:
+            TextStyle(color: textMain, fontWeight: FontWeight.w700),
         actionTextColor: colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -116,9 +123,15 @@ class AppTheme {
     );
   }
 
-  static Color cardColor(BuildContext context) => Theme.of(context).cardTheme.color ?? (isDark(context) ? darkCard : lightCard);
-  static Color inputColor(BuildContext context) => isDark(context) ? darkInput : const Color(0xFFF3F5F8);
-  static Color textMain(BuildContext context) => isDark(context) ? darkTextMain : lightTextMain;
-  static Color textSubtle(BuildContext context) => isDark(context) ? darkTextSubtle : lightTextSubtle;
-  static bool isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
+  static Color cardColor(BuildContext context) =>
+      Theme.of(context).cardTheme.color ??
+      (isDark(context) ? darkCard : lightCard);
+  static Color inputColor(BuildContext context) =>
+      isDark(context) ? darkInput : const Color(0xFFF0EFEA);
+  static Color textMain(BuildContext context) =>
+      isDark(context) ? darkTextMain : lightTextMain;
+  static Color textSubtle(BuildContext context) =>
+      isDark(context) ? darkTextSubtle : lightTextSubtle;
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
 }

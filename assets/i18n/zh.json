@@ -276,6 +276,7 @@
   "noLinkedInvestment": "不关联理财",
   "investmentQuantity": "理财数量",
   "investmentQuantityHint": "例如 100",
+<<<<<<< HEAD
   "sortHint": "长按右侧拖动可调整排序",
   "traditionalChinese": "繁体中文",
   "cnStockType": "A股",
@@ -288,4 +289,7 @@
   "cnEtfHelp": "A股ETF支持沪深300ETF、上证50ETF、科创50ETF、创业板ETF 等，也支持远程搜索。",
   "noCnStockMatch": "没有匹配到常用 A股。配置 API 后可远程搜索；也可以手动输入股票代码。",
   "noCnEtfMatch": "没有匹配到常用 A股ETF。配置 API 后可远程搜索；也可以手动输入 ETF 代码。"
+=======
+  "sortHint": "长按右侧拖动可调整排序"
+>>>>>>> edc88763fe8dc5d5d3245dbdf724f1ca17928c19
 }

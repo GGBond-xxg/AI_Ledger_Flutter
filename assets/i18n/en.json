@@ -276,6 +276,7 @@
   "noLinkedInvestment": "No linked investment",
   "investmentQuantity": "Investment quantity",
   "investmentQuantityHint": "e.g. 100",
+<<<<<<< HEAD
   "sortHint": "Long-press the handle on the right to reorder",
   "traditionalChinese": "Traditional Chinese",
   "cnStockType": "A-share",
@@ -288,4 +289,7 @@
   "cnEtfHelp": "A-share ETFs support CSI 300 ETF, SSE 50 ETF, STAR 50 ETF, ChiNext ETF, and remote search.",
   "noCnStockMatch": "No common A-share matched. Configure the API for remote search, or enter the stock code manually.",
   "noCnEtfMatch": "No common A-share ETF matched. Configure the API for remote search, or enter the ETF code manually."
+=======
+  "sortHint": "Long-press the handle on the right to reorder"
+>>>>>>> edc88763fe8dc5d5d3245dbdf724f1ca17928c19
 }
