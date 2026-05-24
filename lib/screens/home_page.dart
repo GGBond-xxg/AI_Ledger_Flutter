@@ -27,7 +27,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final RxInt _tab = 0.obs;
   Timer? _timer;
   final LedgerStore store = Get.find<LedgerStore>();
 
@@ -35,7 +34,8 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     Future.microtask(() => store.refreshValuation(source: 'homeInit'));
-    _timer = Timer.periodic(const Duration(minutes: 15), (_) => store.refreshValuation(source: 'timer15m'));
+    _timer = Timer.periodic(const Duration(minutes: 15),
+        (_) => store.refreshValuation(source: 'timer15m'));
   }
 
   @override
@@ -54,7 +54,9 @@ class _HomePageState extends State<HomePage> {
 
       return Scaffold(
         floatingActionButton: FloatingActionButton(
-          onPressed: () => _tab.value == 0 ? _openBillForm() : _showAssetAddSheet(),
+          onPressed: () => store.selectedMainTab.value == 0
+              ? _openBillForm()
+              : _showAssetAddSheet(),
           child: const Icon(Icons.add_rounded, size: 30),
         ),
         bottomNavigationBar: SafeArea(
@@ -64,15 +66,25 @@ class _HomePageState extends State<HomePage> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
               child: NavigationBar(
-                selectedIndex: _tab.value,
+                selectedIndex: store.selectedMainTab.value,
                 height: 66,
                 elevation: 0,
                 backgroundColor: navBackground,
-                indicatorColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.13),
-                onDestinationSelected: (index) => _tab.value = index,
+                indicatorColor: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.13),
+                onDestinationSelected: store.setMainTab,
                 destinations: [
-                  NavigationDestination(icon: const Icon(Icons.receipt_long_outlined), selectedIcon: const Icon(Icons.receipt_long_rounded), label: 'bills'.tr),
-                  NavigationDestination(icon: const Icon(Icons.account_balance_wallet_outlined), selectedIcon: const Icon(Icons.account_balance_wallet_rounded), label: 'assets'.tr),
+                  NavigationDestination(
+                      icon: const Icon(Icons.receipt_long_outlined),
+                      selectedIcon: const Icon(Icons.receipt_long_rounded),
+                      label: 'bills'.tr),
+                  NavigationDestination(
+                      icon: const Icon(Icons.account_balance_wallet_outlined),
+                      selectedIcon:
+                          const Icon(Icons.account_balance_wallet_rounded),
+                      label: 'assets'.tr),
                 ],
               ),
             ),
@@ -90,7 +102,7 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       _Header(store: store),
                       const SizedBox(height: 18),
-                      if (_tab.value == 0)
+                      if (store.selectedMainTab.value == 0)
                         _BillsPage(store: store, onAdd: _openBillForm)
                       else ...[
                         SummaryCard(store: store),
@@ -100,7 +112,11 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(height: 14),
                         ],
                         if (failedAssets.isNotEmpty) ...[
-                          ErrorBanner(message: trPartialQuoteFailed(failedAssets.map((e) => e['name'] ?? e['symbol'] ?? e['id']).join('listSeparator'.tr))),
+                          ErrorBanner(
+                              message: trPartialQuoteFailed(failedAssets
+                                  .map((e) =>
+                                      e['name'] ?? e['symbol'] ?? e['id'])
+                                  .join('listSeparator'.tr))),
                           const SizedBox(height: 14),
                         ],
                         _AssetsPage(store: store),
@@ -146,7 +162,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _openAssetForm(bool investment, {AssetItem? existing}) async {
-    await Get.to<void>(() => AssetFormPage(investmentDefault: investment, existing: existing));
+    await Get.to<void>(
+        () => AssetFormPage(investmentDefault: investment, existing: existing));
   }
 
   Future<void> _openDebtForm({DebtItem? existing}) async {
@@ -167,16 +184,23 @@ class _Header extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('appTitle'.tr, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -0.8)),
+              Text('appTitle'.tr,
+                  style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.8)),
               const SizedBox(height: 4),
-              Text('${'localLedger'.tr} · ${trEstimateIn(store.settings.defaultCurrency)}', style: TextStyle(color: AppTheme.textSubtle(context))),
+              Text(
+                  '${'localLedger'.tr} · ${trEstimateIn(store.settings.defaultCurrency)}',
+                  style: TextStyle(color: AppTheme.textSubtle(context))),
             ],
           ),
         ),
         Obx(
           () => _CircleButton(
             icon: Icons.sync_rounded,
-            onTap: () => store.refreshValuation(force: true, source: 'headerButton'),
+            onTap: () =>
+                store.refreshValuation(force: true, source: 'headerButton'),
             loading: store.showRefreshSpinner,
           ),
         ),
@@ -191,7 +215,8 @@ class _Header extends StatelessWidget {
 }
 
 class _CircleButton extends StatelessWidget {
-  const _CircleButton({required this.icon, required this.onTap, this.loading = false});
+  const _CircleButton(
+      {required this.icon, required this.onTap, this.loading = false});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -205,7 +230,9 @@ class _CircleButton extends StatelessWidget {
       child: Container(
         width: 44,
         height: 44,
-        decoration: BoxDecoration(color: AppTheme.cardColor(context), borderRadius: BorderRadius.circular(18)),
+        decoration: BoxDecoration(
+            color: AppTheme.cardColor(context),
+            borderRadius: BorderRadius.circular(18)),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 180),
           child: loading
@@ -258,7 +285,8 @@ class _BillsPage extends StatelessWidget {
                   child: BillTile(
                     item: item,
                     onDelete: () => store.removeBill(item.id),
-                    onEdit: () => Get.to<void>(() => BillFormPage(existing: item)),
+                    onEdit: () =>
+                        Get.to<void>(() => BillFormPage(existing: item)),
                   ),
                 )),
         ],
@@ -291,15 +319,24 @@ class _MonthSelector extends StatelessWidget {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-        decoration: BoxDecoration(color: AppTheme.cardColor(context), borderRadius: BorderRadius.circular(18)),
+        decoration: BoxDecoration(
+            color: AppTheme.cardColor(context),
+            borderRadius: BorderRadius.circular(18)),
         child: Row(
           children: [
-            Icon(Icons.calendar_month_rounded, color: Theme.of(context).colorScheme.primary),
+            Icon(Icons.calendar_month_rounded,
+                color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 10),
-            Expanded(child: Text(monthText(month), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18))),
-            Text('tapToSwitchMonth'.tr, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
+            Expanded(
+                child: Text(monthText(month),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w900, fontSize: 18))),
+            Text('tapToSwitchMonth'.tr,
+                style: TextStyle(
+                    color: AppTheme.textSubtle(context), fontSize: 12)),
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right_rounded, color: AppTheme.textSubtle(context)),
+            Icon(Icons.chevron_right_rounded,
+                color: AppTheme.textSubtle(context)),
           ],
         ),
       ),
@@ -320,9 +357,23 @@ class _BillSummaryCard extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         child: Row(
           children: [
-            Expanded(child: _BillTotal(label: 'expense'.tr, value: store.monthlyExpenseTotal, currency: currency, color: const Color(0xFFD64545))),
-            Expanded(child: _BillTotal(label: 'income'.tr, value: store.monthlyIncomeTotal, currency: currency, color: const Color(0xFF248B5D))),
-            Expanded(child: _BillTotal(label: 'monthNet'.tr, value: store.monthlyBillNet, currency: currency)),
+            Expanded(
+                child: _BillTotal(
+                    label: 'expense'.tr,
+                    value: store.monthlyExpenseTotal,
+                    currency: currency,
+                    color: const Color(0xFFD64545))),
+            Expanded(
+                child: _BillTotal(
+                    label: 'income'.tr,
+                    value: store.monthlyIncomeTotal,
+                    currency: currency,
+                    color: const Color(0xFF248B5D))),
+            Expanded(
+                child: _BillTotal(
+                    label: 'monthNet'.tr,
+                    value: store.monthlyBillNet,
+                    currency: currency)),
           ],
         ),
       ),
@@ -331,7 +382,11 @@ class _BillSummaryCard extends StatelessWidget {
 }
 
 class _BillTotal extends StatelessWidget {
-  const _BillTotal({required this.label, required this.value, required this.currency, this.color});
+  const _BillTotal(
+      {required this.label,
+      required this.value,
+      required this.currency,
+      this.color});
 
   final String label;
   final double value;
@@ -343,12 +398,18 @@ class _BillTotal extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
+        Text(label,
+            style:
+                TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
         const SizedBox(height: 6),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(money(value, currency), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: color ?? AppTheme.textMain(context))),
+          child: Text(money(value, currency),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: color ?? AppTheme.textMain(context))),
         ),
       ],
     );
@@ -362,37 +423,104 @@ class _AssetsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final normalAssets = store.assets.where((e) => e.isNormalAsset).toList();
-    final investments = store.assets.where((e) => e.isInvestment).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _AssetSection(
-          store: store,
-          title: 'funds'.tr,
-          description: 'fundsDesc'.tr,
-          assets: normalAssets,
-          emptyText: 'emptyAssetsTitle'.tr,
-          emptySubtitle: 'emptyAssetsSubtitle'.tr,
-          emptyIcon: Icons.account_balance_wallet_rounded,
-          emptyTips: 'emptyAssetsTips'.trList,
-          emptyAction: () => Get.to<void>(() => const AssetFormPage(investmentDefault: false)),
-        ),
-        const SizedBox(height: 18),
-        _AssetSection(
-          store: store,
-          title: 'investment'.tr,
-          description: 'investmentsDesc'.tr,
-          assets: investments,
-          emptyText: 'emptyInvestmentsTitle'.tr,
-          emptySubtitle: 'emptyInvestmentsSubtitle'.tr,
-          emptyIcon: Icons.show_chart_rounded,
-          emptyTips: const ['AAPL', 'QQQ', 'SOL', 'XAU'],
-          emptyAction: () => Get.to<void>(() => const AssetFormPage(investmentDefault: true)),
-        ),
-        const SizedBox(height: 18),
-        _DebtSection(store: store, debts: store.debts.toList(), emptyAction: () => Get.to<void>(() => const DebtFormPage())),
-      ],
+    return Obx(() {
+      final selected = store.selectedAssetTab.value;
+      final normalAssets = store.assets.where((e) => e.isNormalAsset).toList();
+      final investments = store.assets.where((e) => e.isInvestment).toList();
+      final debts = store.debts.toList();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _AssetSegmentedTabs(store: store),
+          const SizedBox(height: 16),
+          if (selected == 0)
+            _AssetSection(
+              store: store,
+              title: 'funds'.tr,
+              description: 'fundsDesc'.tr,
+              assets: normalAssets,
+              investment: false,
+              emptyText: 'emptyAssetsTitle'.tr,
+              emptySubtitle: 'emptyAssetsSubtitle'.tr,
+              emptyIcon: Icons.account_balance_wallet_rounded,
+              emptyTips: 'emptyAssetsTips'.trList,
+              emptyAction: () => Get.to<void>(
+                  () => const AssetFormPage(investmentDefault: false)),
+            )
+          else if (selected == 1)
+            _AssetSection(
+              store: store,
+              title: 'investment'.tr,
+              description: 'investmentsDesc'.tr,
+              assets: investments,
+              investment: true,
+              emptyText: 'emptyInvestmentsTitle'.tr,
+              emptySubtitle: 'emptyInvestmentsSubtitle'.tr,
+              emptyIcon: Icons.show_chart_rounded,
+              emptyTips: const ['AAPL', 'QQQ', 'SOL', 'XAU'],
+              emptyAction: () => Get.to<void>(
+                  () => const AssetFormPage(investmentDefault: true)),
+            )
+          else
+            _DebtSection(
+                store: store,
+                debts: debts,
+                emptyAction: () => Get.to<void>(() => const DebtFormPage())),
+        ],
+      );
+    });
+  }
+}
+
+class _AssetSegmentedTabs extends StatelessWidget {
+  const _AssetSegmentedTabs({required this.store});
+
+  final LedgerStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final labels = ['funds'.tr, 'investment'.tr, 'debt'.tr];
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: List.generate(labels.length, (index) {
+          final selected = store.selectedAssetTab.value == index;
+          return Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => store.setAssetTab(index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.12)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  labels[index],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: selected
+                        ? Theme.of(context).colorScheme.primary
+                        : AppTheme.textSubtle(context),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 }
@@ -403,6 +531,7 @@ class _AssetSection extends StatelessWidget {
     required this.title,
     required this.description,
     required this.assets,
+    required this.investment,
     required this.emptyText,
     required this.emptySubtitle,
     required this.emptyIcon,
@@ -414,6 +543,7 @@ class _AssetSection extends StatelessWidget {
   final String title;
   final String description;
   final List<AssetItem> assets;
+  final bool investment;
   final String emptyText;
   final String emptySubtitle;
   final IconData emptyIcon;
@@ -427,25 +557,80 @@ class _AssetSection extends StatelessWidget {
       children: [
         SectionHeader(title: title, description: description),
         if (assets.isEmpty)
-          EmptyCard(title: emptyText, subtitle: emptySubtitle, icon: emptyIcon, tips: emptyTips, onTap: emptyAction)
+          EmptyCard(
+              title: emptyText,
+              subtitle: emptySubtitle,
+              icon: emptyIcon,
+              tips: emptyTips,
+              onTap: emptyAction)
         else
-          ...assets.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: AssetTile(
-                  item: item,
-                  defaultCurrency: store.settings.defaultCurrency,
-                  valuation: store.valuationAsset(item.id),
-                  onDelete: () => store.removeAsset(item.id),
-                  onEdit: () => Get.to<void>(() => AssetFormPage(investmentDefault: item.isInvestment, existing: item)),
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            proxyDecorator: _reorderProxyDecorator,
+            itemCount: assets.length,
+            onReorder: (oldIndex, newIndex) => store.reorderAssets(
+                investment: investment, oldIndex: oldIndex, newIndex: newIndex),
+            itemBuilder: (context, index) {
+              final item = assets[index];
+              return ReorderableDelayedDragStartListener(
+                key: ValueKey(item.id),
+                index: index,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: AssetTile(
+                    item: item,
+                    defaultCurrency: store.settings.defaultCurrency,
+                    valuation: store.valuationAsset(item.id),
+                    onDelete: () => store.removeAsset(item.id),
+                    onEdit: () => Get.to<void>(() => AssetFormPage(
+                        investmentDefault: item.isInvestment, existing: item)),
+                  ),
                 ),
-              )),
+              );
+            },
+          ),
       ],
     );
   }
 }
 
+Widget _reorderProxyDecorator(
+    Widget child, int index, Animation<double> animation) {
+  return AnimatedBuilder(
+    animation: animation,
+    builder: (context, _) {
+      final t = Curves.easeOutCubic.transform(animation.value);
+      return Transform.scale(
+        scale: 1 + t * 0.015,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black
+                    .withValues(alpha: AppTheme.isDark(context) ? 0.28 : 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+            clipBehavior: Clip.antiAlias,
+            child: child,
+          ),
+        ),
+      );
+    },
+  );
+}
+
 class _DebtSection extends StatelessWidget {
-  const _DebtSection({required this.store, required this.debts, required this.emptyAction});
+  const _DebtSection(
+      {required this.store, required this.debts, required this.emptyAction});
 
   final LedgerStore store;
   final List<DebtItem> debts;
@@ -467,16 +652,32 @@ class _DebtSection extends StatelessWidget {
             onTap: emptyAction,
           )
         else
-          ...debts.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DebtTile(
-                  item: item,
-                  defaultCurrency: store.settings.defaultCurrency,
-                  valuation: store.valuationDebt(item.id),
-                  onDelete: () => store.removeDebt(item.id),
-                  onEdit: () => Get.to<void>(() => DebtFormPage(existing: item)),
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            proxyDecorator: _reorderProxyDecorator,
+            itemCount: debts.length,
+            onReorder: store.reorderDebts,
+            itemBuilder: (context, index) {
+              final item = debts[index];
+              return ReorderableDelayedDragStartListener(
+                key: ValueKey(item.id),
+                index: index,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: DebtTile(
+                    item: item,
+                    defaultCurrency: store.settings.defaultCurrency,
+                    valuation: store.valuationDebt(item.id),
+                    onDelete: () => store.removeDebt(item.id),
+                    onEdit: () =>
+                        Get.to<void>(() => DebtFormPage(existing: item)),
+                  ),
                 ),
-              )),
+              );
+            },
+          ),
       ],
     );
   }

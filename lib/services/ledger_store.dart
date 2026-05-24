@@ -26,6 +26,8 @@ class LedgerStore extends GetxController {
   final RxList<BillItem> bills = <BillItem>[].obs;
   final Rx<DateTime> selectedBillMonth = DateTime(DateTime.now().year, DateTime.now().month).obs;
   final RxInt billsVersion = 0.obs;
+  final RxInt selectedMainTab = 0.obs;
+  final RxInt selectedAssetTab = 0.obs;
   final Rxn<Map<String, dynamic>> _valuation = Rxn<Map<String, dynamic>>();
   final RxBool _isRefreshing = false.obs;
   final RxBool _showRefreshSpinner = false.obs;
@@ -424,9 +426,14 @@ class LedgerStore extends GetxController {
   }
 
   void _applyBillAssetEffect(BillItem item, {bool reverse = false}) {
+    _applyBillFundEffect(item, reverse: reverse);
+    _applyBillInvestmentEffect(item, reverse: reverse);
+  }
+
+  void _applyBillFundEffect(BillItem item, {bool reverse = false}) {
     if (item.assetId.trim().isEmpty || item.amount <= 0) return;
 
-    final index = assets.indexWhere((asset) => asset.id == item.assetId && asset.type == 'cash');
+    final index = assets.indexWhere((asset) => item.assetId == asset.id && asset.type == 'cash');
     if (index < 0) return;
 
     final asset = assets[index];
@@ -444,9 +451,40 @@ class LedgerStore extends GetxController {
     assets[index] = asset;
   }
 
+  void _applyBillInvestmentEffect(BillItem item, {bool reverse = false}) {
+    if (item.investmentAssetId.trim().isEmpty || item.investmentQuantity <= 0) return;
+
+    final index = assets.indexWhere((asset) => asset.id == item.investmentAssetId && asset.isInvestment);
+    if (index < 0) return;
+
+    final asset = assets[index];
+
+    // Expense means buying an investment with funds; income means selling/reducing investment.
+    var delta = item.isIncome ? -item.investmentQuantity : item.investmentQuantity;
+    if (reverse) {
+      delta = -delta;
+    }
+
+    asset.quantity += delta;
+    if (asset.quantity.abs() < 0.000000001) {
+      asset.quantity = 0;
+    }
+    assets[index] = asset;
+  }
+
   void setBillMonth(DateTime month) {
     selectedBillMonth.value = DateTime(month.year, month.month);
     _touchBills();
+    update();
+  }
+
+  void setMainTab(int index) {
+    selectedMainTab.value = index.clamp(0, 1).toInt();
+    update();
+  }
+
+  void setAssetTab(int index) {
+    selectedAssetTab.value = index.clamp(0, 2).toInt();
     update();
   }
 
@@ -474,6 +512,41 @@ class LedgerStore extends GetxController {
   /// Bills are everyday income/expense records, so they should affect cash/bank style assets only.
   List<AssetItem> get billLinkedAssets =>
       assets.where((item) => item.type == 'cash').toList(growable: false);
+
+  List<AssetItem> get billLinkedInvestments =>
+      assets.where((item) => item.isInvestment).toList(growable: false);
+
+  void reorderAssets({required bool investment, required int oldIndex, required int newIndex}) {
+    final group = assets.where((item) => item.isInvestment == investment).toList(growable: true);
+    if (oldIndex < 0 || oldIndex >= group.length) return;
+    if (newIndex > oldIndex) newIndex -= 1;
+    newIndex = newIndex.clamp(0, group.length - 1).toInt();
+    final moved = group.removeAt(oldIndex);
+    group.insert(newIndex, moved);
+
+    var cursor = 0;
+    final rebuilt = assets.map((item) {
+      if (item.isInvestment == investment) {
+        return group[cursor++];
+      }
+      return item;
+    }).toList(growable: false);
+    assets.assignAll(rebuilt);
+    save();
+    update();
+  }
+
+  void reorderDebts(int oldIndex, int newIndex) {
+    if (oldIndex < 0 || oldIndex >= debts.length) return;
+    if (newIndex > oldIndex) newIndex -= 1;
+    newIndex = newIndex.clamp(0, debts.length - 1).toInt();
+    final items = debts.toList(growable: true);
+    final moved = items.removeAt(oldIndex);
+    items.insert(newIndex, moved);
+    debts.assignAll(items);
+    save();
+    update();
+  }
 
   Future<void> addAsset(AssetItem item) async {
     assets.insert(0, item);

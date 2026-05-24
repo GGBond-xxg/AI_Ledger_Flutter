@@ -296,7 +296,11 @@ class _DebtImagePreview extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        ClipRRect(borderRadius: BorderRadius.circular(14), child: image),
+        InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showDebtImagePreview(context, imageBase64),
+          child: ClipRRect(borderRadius: BorderRadius.circular(14), child: image),
+        ),
         Positioned(
           top: -8,
           right: -8,
@@ -317,6 +321,39 @@ class _DebtImagePreview extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+
+void _showDebtImagePreview(BuildContext context, String imageBase64) {
+  try {
+    final bytes = base64Decode(imageBase64);
+    Get.dialog<void>(
+      Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Image.memory(bytes, fit: BoxFit.contain),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton.filled(
+                onPressed: () => Get.back<void>(),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  } catch (_) {
+    // Ignore broken local image data.
   }
 }
 

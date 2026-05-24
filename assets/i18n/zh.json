@@ -177,11 +177,11 @@
   "copyAddress": "复制地址",
   "copiedToClipboard": "已复制到剪贴板",
   "notConfigured": "未配置",
-  "apiAddressRequiredDetail": "请先在设置里填写 API 地址，例如 https://ledger.wweh.dpdns.org",
+  "apiAddressRequiredDetail": "请先在设置里填写 API 地址，例如 https://api.example.com",
   "apiTokenRequiredDetail": "请先在设置里填写 API Token。这个 Token 是你在 Cloudflare Worker/Pages 里设置的 APP_API_TOKEN。",
   "apiTimeoutDetail": "当前网络不佳，API 请求超时。已显示缓存金额。",
   "apiUnauthorizedDetail": "API Token 不正确或未配置。请检查设置里的 API Token 是否和 Cloudflare 的 APP_API_TOKEN 一致。",
-  "apiNotFoundDetail": "API 地址不正确，服务没有找到对应接口。请确认 API 地址只填写域名，例如 https://ledger.wweh.dpdns.org，不要填写 /api/health。",
+  "apiNotFoundDetail": "API 地址不正确，服务没有找到对应接口。请确认 API 地址只填写域名，例如 https://api.example.com，不要填写 /api/health。",
   "apiServerErrorDetail": "API 服务返回异常（@status）。请稍后再试，或检查 Cloudflare Worker 日志。",
   "apiRequestFailedDetail": "API 请求失败（@status）。请检查 API 地址和 Token。",
   "apiResponseInvalid": "API 返回格式不正确。请检查你的聚合 API 是否部署正确。",
@@ -272,5 +272,10 @@
   "billCategory_otherIncome": "其他收入",
   "linkedAsset": "对应资产",
   "noLinkedAsset": "不关联资产",
-  "billLinkedAssetHelp": "账单只保存在本机。选择对应资产后，支出会从该资产扣除，收入会加到该资产；不选择则只记录账单。"
+  "billLinkedAssetHelp": "选择对应资金后，支出会扣除资金，收入会增加资金；选择对应理财后，支出会增加理财数量，收入会减少理财数量。",
+  "linkedInvestment": "对应理财",
+  "noLinkedInvestment": "不关联理财",
+  "investmentQuantity": "理财数量",
+  "investmentQuantityHint": "例如 100",
+  "sortHint": "长按右侧拖动可调整排序"
 }

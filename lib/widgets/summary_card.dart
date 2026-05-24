@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../app/app_theme.dart';
 import '../core/formatters.dart';
 import '../services/ledger_store.dart';
 
@@ -20,11 +21,7 @@ class SummaryCard extends StatelessWidget {
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF2F6BFF), Color(0xFF55A6FF)],
-            ),
+            color: AppTheme.isDark(context) ? const Color(0xFF26334A) : const Color(0xFF2F4668),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

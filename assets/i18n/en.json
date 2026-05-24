@@ -177,11 +177,11 @@
   "copyAddress": "Copy address",
   "copiedToClipboard": "Copied to clipboard",
   "notConfigured": "Not configured",
-  "apiAddressRequiredDetail": "Please enter the API base URL in Settings, for example https://ledger.wweh.dpdns.org.",
+  "apiAddressRequiredDetail": "Please enter the API base URL in Settings, for example https://api.example.com.",
   "apiTokenRequiredDetail": "Please enter the API token in Settings. It should match APP_API_TOKEN configured in Cloudflare Worker/Pages.",
   "apiTimeoutDetail": "Network is unstable and the API timed out. Cached values are shown.",
   "apiUnauthorizedDetail": "The API token is missing or incorrect. Check that the token matches APP_API_TOKEN in Cloudflare.",
-  "apiNotFoundDetail": "The API endpoint was not found. Enter only the domain as the API URL, for example https://ledger.wweh.dpdns.org, not /api/health.",
+  "apiNotFoundDetail": "The API endpoint was not found. Enter only the domain as the API URL, for example https://api.example.com, not /api/health.",
   "apiServerErrorDetail": "The API service returned an error (@status). Try again later or check Cloudflare Worker logs.",
   "apiRequestFailedDetail": "API request failed (@status). Check the API URL and token.",
   "apiResponseInvalid": "The API response format is invalid. Check whether the quote API is deployed correctly.",
@@ -272,5 +272,10 @@
   "billCategory_otherIncome": "Other income",
   "linkedAsset": "Linked asset",
   "noLinkedAsset": "No linked asset",
-  "billLinkedAssetHelp": "Bills are stored only on this device. If you link an asset, expenses will deduct from it and income will add to it; otherwise the bill is recorded only."
+  "billLinkedAssetHelp": "If a fund is linked, expenses deduct it and income adds to it. If an investment is linked, expenses add investment quantity and income reduces it.",
+  "linkedInvestment": "Linked investment",
+  "noLinkedInvestment": "No linked investment",
+  "investmentQuantity": "Investment quantity",
+  "investmentQuantityHint": "e.g. 100",
+  "sortHint": "Long-press the handle on the right to reorder"
 }
