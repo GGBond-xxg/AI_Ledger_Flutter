@@ -17,7 +17,7 @@ class AssetItem {
 
   final String id;
   String name;
-  String type; // cash / manual / crypto / metal / stock / etf
+  String type; // cash / manual / crypto / metal / stock / etf / cn_stock / cn_etf
   String symbol;
   double quantity;
   String currency;
@@ -26,7 +26,7 @@ class AssetItem {
   String note;
   DateTime createdAt;
 
-  bool get isInvestment => ['crypto', 'metal', 'stock', 'etf'].contains(type);
+  bool get isInvestment => ['crypto', 'metal', 'stock', 'etf', 'cn_stock', 'cn_etf'].contains(type);
   bool get isNormalAsset => !isInvestment;
 
   factory AssetItem.fromJson(Map<String, dynamic> json) {
@@ -76,7 +76,7 @@ class AssetItem {
     } else if (type == 'metal') {
       map['symbol'] = symbol.trim().isEmpty ? 'XAU' : symbol.trim().toUpperCase();
       map['unit'] = unit.trim().isEmpty ? 'gram' : unit.trim();
-    } else if (type == 'stock' || type == 'etf') {
+    } else if (type == 'stock' || type == 'etf' || type == 'cn_stock' || type == 'cn_etf') {
       map['symbol'] = symbol.trim().toUpperCase();
     }
 

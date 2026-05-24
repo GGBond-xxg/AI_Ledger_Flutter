@@ -24,11 +24,11 @@ Place these under `<manifest>` and before `<application>`.
 5. Keep API URL in Settings as domain only, for example:
 
 ```text
-https://ledger.wweh.dpdns.org
+https://api.example.com
 ```
 
 Do not fill:
 
 ```text
-https://ledger.wweh.dpdns.org/api/health
+https://api.example.com/api/health
 ```

@@ -359,10 +359,13 @@ class LedgerStore extends GetxController {
   void _applyGetXRuntimeSettings() {
     Get.changeThemeMode(_themeMode(settings.themeMode));
     final language = settings.languageMode;
-    if (language == 'zh' || language == 'en') {
+    if (language == 'zh_Hant') {
+      Get.updateLocale(const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'));
+    } else if (language == 'zh' || language == 'en') {
       Get.updateLocale(Locale(language));
     } else {
-      Get.updateLocale(Locale(_normalizeLanguageCode(Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale)));
+      final code = _normalizeLanguageCode(Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale);
+      Get.updateLocale(code == 'zh_Hant' ? const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant') : Locale(code));
     }
   }
 
@@ -376,7 +379,13 @@ class LedgerStore extends GetxController {
 
   String _normalizeLanguageCode(Locale? locale) {
     final code = locale?.languageCode.toLowerCase() ?? 'en';
-    return code.startsWith('zh') ? 'zh' : 'en';
+    if (code.startsWith('zh')) {
+      final script = locale?.scriptCode?.toLowerCase();
+      final country = locale?.countryCode?.toLowerCase();
+      if (script == 'hant' || country == 'tw' || country == 'hk' || country == 'mo') return 'zh_Hant';
+      return 'zh';
+    }
+    return 'en';
   }
 
 

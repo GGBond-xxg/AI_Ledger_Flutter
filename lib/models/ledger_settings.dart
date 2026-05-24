@@ -22,7 +22,7 @@ class LedgerSettings {
   /// system / light / dark
   String themeMode;
 
-  /// system / zh / en
+  /// system / zh / zh_Hant / en
   String languageMode;
 
   /// false = 不启用密码锁。
@@ -69,7 +69,7 @@ class LedgerSettings {
       apiToken: (json['apiToken'] as String?) ?? '',
       defaultCurrency: (json['defaultCurrency'] as String?)?.toUpperCase() ?? 'CNY',
       themeMode: ['system', 'light', 'dark'].contains(theme) ? theme! : 'system',
-      languageMode: ['system', 'zh', 'en'].contains(language) ? language! : 'system',
+      languageMode: ['system', 'zh', 'zh_Hant', 'en'].contains(language) ? language! : 'system',
       appLockEnabled: safeEnabled,
       appLockMethod: safeEnabled ? (safeBiometrics ? 'device' : 'pin') : 'none',
       appBiometricsEnabled: safeBiometrics,

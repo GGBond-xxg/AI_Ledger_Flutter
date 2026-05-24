@@ -246,6 +246,8 @@ class _TypeIcon extends StatelessWidget {
       'metal' => Icons.diamond_rounded,
       'stock' => Icons.show_chart_rounded,
       'etf' => Icons.pie_chart_rounded,
+      'cn_stock' => Icons.trending_up_rounded,
+      'cn_etf' => Icons.donut_large_rounded,
       _ => Icons.wallet_rounded,
     };
     return Container(

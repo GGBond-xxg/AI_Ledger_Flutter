@@ -12,8 +12,12 @@ class TranslationService extends Translations {
   final Map<String, Map<String, String>> _keys;
 
   static const fallbackLocale = Locale('en');
-  static const supportedLocales = [Locale('en'), Locale('zh')];
-  static const supportedLanguageCodes = ['en', 'zh'];
+  static const supportedLocales = [
+    Locale('en'),
+    Locale('zh'),
+    Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+  ];
+  static const supportedLanguageCodes = ['en', 'zh', 'zh_Hant'];
 
   static final Map<String, Map<String, dynamic>> rawValues = {};
 
@@ -26,14 +30,24 @@ class TranslationService extends Translations {
       final raw = await rootBundle.loadString('assets/i18n/$code.json');
       final jsonMap = json.decode(raw) as Map<String, dynamic>;
       rawValues[code] = jsonMap;
-      result[code] = jsonMap.map((key, value) => MapEntry(key, _stringify(value)));
+      result[code] =
+          jsonMap.map((key, value) => MapEntry(key, _stringify(value)));
     }
     return TranslationService._(result);
   }
 
   static String normalizeLanguageCode(Locale? locale) {
     final code = locale?.languageCode.toLowerCase() ?? 'en';
-    return code.startsWith('zh') ? 'zh' : 'en';
+    if (code.startsWith('zh')) {
+      final script = locale?.scriptCode?.toLowerCase();
+      final country = locale?.countryCode?.toLowerCase();
+      if (script == 'hant' ||
+          country == 'tw' ||
+          country == 'hk' ||
+          country == 'mo') return 'zh_Hant';
+      return 'zh';
+    }
+    return 'en';
   }
 
   /// Always returns a concrete locale.
@@ -45,13 +59,19 @@ class TranslationService extends Translations {
   static Locale localeFromMode(String mode) {
     return switch (mode) {
       'zh' => const Locale('zh'),
+      'zh_Hant' =>
+        const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
       'en' => const Locale('en'),
       _ => currentDeviceLocale(),
     };
   }
 
   static Locale currentDeviceLocale() {
-    return Locale(normalizeLanguageCode(Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale));
+    final code = normalizeLanguageCode(
+        Get.deviceLocale ?? WidgetsBinding.instance.platformDispatcher.locale);
+    return code == 'zh_Hant'
+        ? const Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant')
+        : Locale(code);
   }
 
   static String _stringify(dynamic value) {
@@ -66,17 +86,25 @@ extension TranslationListExtension on String {
   List<String> get trList {
     final value = tr;
     if (value.trim().isEmpty || value == this) return const [];
-    return value.split('|').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(growable: false);
+    return value
+        .split('|')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList(growable: false);
   }
 }
 
-String trEstimateIn(String currency) => 'estimateIn'.trParams({'currency': currency});
+String trEstimateIn(String currency) =>
+    'estimateIn'.trParams({'currency': currency});
 
-String trPartialQuoteFailed(String names) => 'partialQuoteFailed'.trParams({'names': names});
+String trPartialQuoteFailed(String names) =>
+    'partialQuoteFailed'.trParams({'names': names});
 
-String trDeleteCannotRecover(String title) => 'deleteCannotRecover'.trParams({'title': title});
+String trDeleteCannotRecover(String title) =>
+    'deleteCannotRecover'.trParams({'title': title});
 
-String trImageLoadFailed(String error) => 'imageLoadFailed'.trParams({'error': error});
+String trImageLoadFailed(String error) =>
+    'imageLoadFailed'.trParams({'error': error});
 
 String trUnitPrice(String price, String? quoteCurrency) {
   final quotePart = quoteCurrency == null ? '' : ' · $quoteCurrency';
@@ -93,6 +121,8 @@ String trAssetType(String type) {
     'metal' => 'metalType'.tr,
     'stock' => 'stockType'.tr,
     'etf' => 'etfType'.tr,
+    'cn_stock' => 'cnStockType'.tr,
+    'cn_etf' => 'cnEtfType'.tr,
     _ => type,
   };
 }
@@ -117,6 +147,8 @@ String trNameHint(String type) {
     'metal' => 'nameHintMetal'.tr,
     'stock' => 'nameHintStock'.tr,
     'etf' => 'nameHintEtf'.tr,
+    'cn_stock' => 'nameHintCnStock'.tr,
+    'cn_etf' => 'nameHintCnEtf'.tr,
     _ => 'nameHintAsset'.tr,
   };
 }
@@ -127,6 +159,8 @@ String trSymbolHint(String type) {
     'metal' => 'metalSymbolHint'.tr,
     'stock' => 'stockSymbolHint'.tr,
     'etf' => 'etfSymbolHint'.tr,
+    'cn_stock' => 'cnStockSymbolHint'.tr,
+    'cn_etf' => 'cnEtfSymbolHint'.tr,
     _ => 'genericSymbolHint'.tr,
   };
 }
@@ -137,11 +171,12 @@ String trSymbolHelp(String type) {
     'metal' => 'metalHelp'.tr,
     'stock' => 'stockHelp'.tr,
     'etf' => 'etfHelp'.tr,
+    'cn_stock' => 'cnStockHelp'.tr,
+    'cn_etf' => 'cnEtfHelp'.tr,
     'manual' => 'manualHelp'.tr,
     _ => 'cashHelp'.tr,
   };
 }
-
 
 String trMetalUnit(String unit) {
   return switch (unit) {
@@ -153,7 +188,9 @@ String trMetalUnit(String unit) {
 
 String trMarketOptionName(MarketOption item) {
   if (item.assetType == 'metal') {
-    final code = item.displayCode.trim().isNotEmpty ? item.displayCode.trim().toUpperCase() : item.symbol.trim().toUpperCase();
+    final code = item.displayCode.trim().isNotEmpty
+        ? item.displayCode.trim().toUpperCase()
+        : item.symbol.trim().toUpperCase();
     return switch (code) {
       'XAU' => 'metalGoldName'.tr,
       'XAG' => 'metalSilverName'.tr,
@@ -184,6 +221,8 @@ String trNoMatch(String type) {
     'crypto' => 'noCryptoMatch'.tr,
     'stock' => 'noStockMatch'.tr,
     'etf' => 'noEtfMatch'.tr,
+    'cn_stock' => 'noCnStockMatch'.tr,
+    'cn_etf' => 'noCnEtfMatch'.tr,
     'metal' => 'noMetalMatch'.tr,
     _ => 'noMatch'.tr,
   };

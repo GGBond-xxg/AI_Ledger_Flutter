@@ -641,7 +641,7 @@ class _DebtSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(title: 'debt'.tr, description: 'debtsDesc'.tr),
+        SectionHeader(title: 'debt'.tr, description: 'addDebtSubtitle'.tr),
         if (debts.isEmpty)
           EmptyCard(
             title: 'emptyDebtsTitle'.tr,

@@ -76,6 +76,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     items: [
                       DropdownMenuItem(value: 'system', child: Text('system'.tr)),
                       DropdownMenuItem(value: 'zh', child: Text('chinese'.tr)),
+                      DropdownMenuItem(value: 'zh_Hant', child: Text('traditionalChinese'.tr)),
                       DropdownMenuItem(value: 'en', child: Text('english'.tr)),
                     ],
                     onChanged: (value) { _languageMode = value ?? _languageMode; _refreshUi(); },
