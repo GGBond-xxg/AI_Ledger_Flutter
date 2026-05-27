@@ -105,6 +105,9 @@ class DebtTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final value = numFromPath(valuation, ['value']);
+    final debtMeta = item.transactions.isEmpty
+        ? '${trDebtDirection(item.direction)} · ${trimNum(item.amount)} ${item.currency}'
+        : '${trDebtDirection(item.direction)} · ${'remainingAmount'.tr} ${trimNum(item.amount)} ${item.currency} · ${'settledAmount'.tr} ${trimNum(item.settledAmount)}';
     return Dismissible(
       key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
@@ -127,7 +130,7 @@ class DebtTile extends StatelessWidget {
                     children: [
                       Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                       const SizedBox(height: 6),
-                      Text('${trDebtDirection(item.direction)} · ${trimNum(item.amount)} ${item.currency}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context))),
+                      Text(debtMeta, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context))),
                       if (item.note.trim().isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(item.note, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),

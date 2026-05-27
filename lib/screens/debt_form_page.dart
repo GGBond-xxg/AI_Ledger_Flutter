@@ -174,6 +174,7 @@ class _DebtFormPageState extends State<DebtFormPage> {
       currency: _currency,
       note: _noteController.text.trim(),
       imageBase64List: _imageBase64List,
+      transactions: existing == null ? null : List<DebtTransaction>.from(existing.transactions),
       createdAt: existing?.createdAt,
     );
 

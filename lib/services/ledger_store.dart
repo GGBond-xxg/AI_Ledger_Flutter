@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/id.dart';
 import '../core/number_utils.dart';
 import '../models/asset_item.dart';
 import '../models/bill_item.dart';
@@ -815,6 +816,110 @@ class LedgerStore extends GetxController {
 
   Future<void> removeDebt(String id) async {
     debts.removeWhere((e) => e.id == id);
+    _syncValuationAfterLocalChange();
+    await save();
+    update();
+  }
+
+  List<AssetItem> debtFundAssets(String currency) {
+    final normalizedCurrency = currency.toUpperCase();
+    return assets
+        .where((item) =>
+            item.type == 'cash' && item.currency.toUpperCase() == normalizedCurrency)
+        .toList(growable: false);
+  }
+
+  Future<void> settleDebt({
+    required String debtId,
+    required String assetId,
+    required double amount,
+    String note = '',
+  }) async {
+    if (amount <= 0) return;
+
+    final debtIndex = debts.indexWhere((item) => item.id == debtId);
+    if (debtIndex < 0) return;
+
+    final debt = debts[debtIndex];
+    if (debt.amount <= 0) return;
+
+    final assetIndex = assets.indexWhere((item) =>
+        item.id == assetId &&
+        item.type == 'cash' &&
+        item.currency.toUpperCase() == debt.currency.toUpperCase());
+    if (assetIndex < 0) return;
+
+    final settledAmount = amount > debt.amount ? debt.amount : amount;
+    final asset = assets[assetIndex];
+    final transaction = DebtTransaction(
+      id: newId(),
+      type: debt.isPayable ? 'repayment' : 'collection',
+      amount: settledAmount,
+      currency: debt.currency,
+      assetId: asset.id,
+      assetName: asset.name,
+      note: note.trim(),
+    );
+
+    if (debt.isPayable) {
+      // 我欠别人：还款后资金减少，负债减少。
+      asset.quantity -= settledAmount;
+    } else {
+      // 别人欠我：收款后资金增加，应收减少。
+      asset.quantity += settledAmount;
+    }
+    if (asset.quantity.abs() < 0.000000001) {
+      asset.quantity = 0;
+    }
+
+    debt.amount -= settledAmount;
+    if (debt.amount.abs() < 0.000000001) {
+      debt.amount = 0;
+    }
+    debt.transactions.insert(0, transaction);
+
+    assets[assetIndex] = asset;
+    debts[debtIndex] = debt;
+    _syncValuationAfterLocalChange();
+    await save();
+    update();
+  }
+
+  Future<void> removeDebtTransaction({
+    required String debtId,
+    required String transactionId,
+  }) async {
+    final debtIndex = debts.indexWhere((item) => item.id == debtId);
+    if (debtIndex < 0) return;
+
+    final debt = debts[debtIndex];
+    final transactionIndex =
+        debt.transactions.indexWhere((item) => item.id == transactionId);
+    if (transactionIndex < 0) return;
+
+    final transaction = debt.transactions.removeAt(transactionIndex);
+    debt.amount += transaction.amount;
+
+    final assetIndex = assets.indexWhere((item) =>
+        item.id == transaction.assetId &&
+        item.type == 'cash' &&
+        item.currency.toUpperCase() == transaction.currency.toUpperCase());
+    if (assetIndex >= 0) {
+      final asset = assets[assetIndex];
+      if (transaction.isRepayment) {
+        // 删除“还款”记录：恢复资金，恢复负债。
+        asset.quantity += transaction.amount;
+      } else {
+        // 删除“收款”记录：扣回资金，恢复应收。
+        asset.quantity -= transaction.amount;
+      }
+      if (asset.quantity.abs() < 0.000000001) {
+        asset.quantity = 0;
+      }
+      assets[assetIndex] = asset;
+    }
+
+    debts[debtIndex] = debt;
     _syncValuationAfterLocalChange();
     await save();
     update();

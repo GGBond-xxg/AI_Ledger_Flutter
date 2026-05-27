@@ -15,6 +15,7 @@ import '../widgets/summary_card.dart';
 import '../widgets/tile_widgets.dart';
 import 'asset_form_page.dart';
 import 'bill_form_page.dart';
+import 'debt_detail_page.dart';
 import 'debt_form_page.dart';
 import 'exchange_form_page.dart';
 import 'settings_page.dart';
@@ -965,7 +966,7 @@ class _DebtSection extends StatelessWidget {
                     valuation: store.valuationDebt(item.id),
                     onDelete: () => store.removeDebt(item.id),
                     onEdit: () =>
-                        Get.to<void>(() => DebtFormPage(existing: item)),
+                        Get.to<void>(() => DebtDetailPage(debtId: item.id)),
                   ),
                 ),
               );
