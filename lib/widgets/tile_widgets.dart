@@ -55,16 +55,36 @@ class AssetTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                      Text(item.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 16)),
                       const SizedBox(height: 6),
-                      Text(_assetMeta(context, item), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context))),
+                      Text(_assetMeta(context, item),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              TextStyle(color: AppTheme.textSubtle(context))),
                       if (price != null) ...[
                         const SizedBox(height: 4),
-                        Text(trUnitPrice(money(price, defaultCurrency), quoteCurrency), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
+                        Text(
+                            trUnitPrice(
+                                money(price, defaultCurrency), quoteCurrency),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: AppTheme.textSubtle(context),
+                                fontSize: 12)),
                       ],
                       if (item.note.trim().isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(item.note, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
+                        Text(item.note,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: AppTheme.textSubtle(context),
+                                fontSize: 12)),
                       ],
                     ],
                   ),
@@ -80,9 +100,15 @@ class AssetTile extends StatelessWidget {
   }
 
   String _assetMeta(BuildContext context, AssetItem item) {
-    if (item.type == 'cash') return '${item.currency} · ${trimNum(item.quantity)}';
-    if (item.type == 'manual') return '${item.currency} · ${trimNum(item.quantity)} × ${trimNum(item.manualPrice)}';
-    if (item.type == 'metal') return '${item.symbol} · ${trimNum(item.quantity)} ${trMetalUnit(item.unit.isEmpty ? 'gram' : item.unit)}';
+    if (item.type == 'cash') {
+      return '${item.currency} · ${trimNum(item.quantity)}';
+    }
+    if (item.type == 'manual') {
+      return '${item.currency} · ${trimNum(item.quantity)} × ${trimNum(item.manualPrice)}';
+    }
+    if (item.type == 'metal') {
+      return '${item.symbol} · ${trimNum(item.quantity)} ${trMetalUnit(item.unit.isEmpty ? 'gram' : item.unit)}';
+    }
     return '${item.symbol} · ${trimNum(item.quantity)}';
   }
 }
@@ -129,12 +155,25 @@ class DebtTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                      Text(item.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w800, fontSize: 16)),
                       const SizedBox(height: 6),
-                      Text(debtMeta, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context))),
+                      Text(debtMeta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              TextStyle(color: AppTheme.textSubtle(context))),
                       if (item.note.trim().isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(item.note, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
+                        Text(item.note,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: AppTheme.textSubtle(context),
+                                fontSize: 12)),
                       ],
                       if (item.hasImage) ...[
                         const SizedBox(height: 8),
@@ -144,7 +183,11 @@ class DebtTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                _AmountText(value: money(value, defaultCurrency), color: item.isPayable ? const Color(0xFFD64545) : const Color(0xFF248B5D)),
+                _AmountText(
+                    value: money(value, defaultCurrency),
+                    color: item.isPayable
+                        ? const Color(0xFFD64545)
+                        : const Color(0xFF248B5D)),
               ],
             ),
           ),
@@ -195,12 +238,18 @@ class _DebtIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = direction == 'payable' ? const Color(0xFFD64545) : const Color(0xFF248B5D);
-    final icon = direction == 'payable' ? Icons.call_made_rounded : Icons.call_received_rounded;
+    final color = direction == 'payable'
+        ? const Color(0xFFD64545)
+        : const Color(0xFF248B5D);
+    final icon = direction == 'payable'
+        ? Icons.call_made_rounded
+        : Icons.call_received_rounded;
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(16)),
       child: Icon(icon, color: color),
     );
   }
@@ -213,7 +262,10 @@ class _DebtImageThumbs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final valid = images.where((e) => e.trim().isNotEmpty).take(3).toList(growable: false);
+    final valid = images
+        .where((e) => e.trim().isNotEmpty)
+        .take(3)
+        .toList(growable: false);
     if (valid.isEmpty) return const SizedBox.shrink();
 
     return Wrap(
@@ -324,7 +376,9 @@ class _DeleteBackground extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 0),
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: 22),
-      decoration: BoxDecoration(color: const Color(0xFFD64545), borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(
+          color: const Color(0xFFD64545),
+          borderRadius: BorderRadius.circular(24)),
       child: const Icon(Icons.delete_rounded, color: Colors.white),
     );
   }
@@ -336,14 +390,15 @@ Future<bool> _confirmDelete(BuildContext context, String title) async {
       title: Text('confirmDelete'.tr),
       content: Text(trDeleteCannotRecover(title)),
       actions: [
-        TextButton(onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
-        FilledButton(onPressed: () => Get.back(result: true), child: Text('delete'.tr)),
+        TextButton(
+            onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
+        FilledButton(
+            onPressed: () => Get.back(result: true), child: Text('delete'.tr)),
       ],
     ),
   );
   return result == true;
 }
-
 
 class BillTile extends StatelessWidget {
   const BillTile({
@@ -366,13 +421,15 @@ class BillTile extends StatelessWidget {
       return _buildInvestmentBill(context);
     }
 
-    final color = item.isIncome ? const Color(0xFF248B5D) : const Color(0xFFD64545);
+    final color =
+        item.isIncome ? const Color(0xFF248B5D) : const Color(0xFFD64545);
     final title = _billTitle(item);
     final noteUsedAsTitle = _billUsesNoteAsTitle(item);
     return Dismissible(
       key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
-      confirmDismiss: (_) async => await _confirmDelete(context, _billTitle(item)),
+      confirmDismiss: (_) async =>
+          await _confirmDelete(context, _billTitle(item)),
       onDismissed: (_) => onDelete(),
       background: const _DeleteBackground(),
       child: Card(
@@ -393,7 +450,8 @@ class BillTile extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 16),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -408,7 +466,9 @@ class BillTile extends StatelessWidget {
                           item.note,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12),
+                          style: TextStyle(
+                              color: AppTheme.textSubtle(context),
+                              fontSize: 12),
                         ),
                       ],
                     ],
@@ -416,7 +476,8 @@ class BillTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 _AmountText(
-                  value: '${item.isIncome ? '+' : '-'}${money(item.amount, item.currency)}',
+                  value:
+                      '${item.isIncome ? '+' : '-'}${money(item.amount, item.currency)}',
                   color: color,
                 ),
               ],
@@ -430,15 +491,21 @@ class BillTile extends StatelessWidget {
   Widget _buildInvestmentBill(BuildContext context) {
     final isSell = item.isInvestmentSell;
     final investmentName = _investmentDisplayName(item);
-    final fundName = item.assetName.trim().isEmpty ? 'linkedAsset'.tr : item.assetName.trim();
+    final fundName = item.assetName.trim().isEmpty
+        ? 'linkedAsset'.tr
+        : item.assetName.trim();
 
     final leftLabel = isSell ? investmentName : fundName;
-    final leftValue = isSell ? '-${trimNum(item.investmentQuantity)}' : '-${money(item.amount, item.currency)}';
-    final leftColor = const Color(0xFFD64545);
+    final leftValue = isSell
+        ? '-${trimNum(item.investmentQuantity)}'
+        : '-${money(item.amount, item.currency)}';
+    const leftColor = Color(0xFFD64545);
 
     final rightLabel = isSell ? fundName : investmentName;
-    final rightValue = isSell ? '+${money(item.amount, item.currency)}' : '+${trimNum(item.investmentQuantity)}';
-    final rightColor = const Color(0xFF248B5D);
+    final rightValue = isSell
+        ? '+${money(item.amount, item.currency)}'
+        : '+${trimNum(item.investmentQuantity)}';
+    const rightColor = Color(0xFF248B5D);
 
     return _FlowBillCard(
       item: item,
@@ -456,8 +523,12 @@ class BillTile extends StatelessWidget {
   }
 
   Widget _buildExchangeBill(BuildContext context) {
-    final fromName = item.assetName.trim().isEmpty ? 'fromFundAccount'.tr : item.assetName.trim();
-    final toName = item.toAssetName.trim().isEmpty ? 'toFundAccount'.tr : item.toAssetName.trim();
+    final fromName = item.assetName.trim().isEmpty
+        ? 'fromFundAccount'.tr
+        : item.assetName.trim();
+    final toName = item.toAssetName.trim().isEmpty
+        ? 'toFundAccount'.tr
+        : item.toAssetName.trim();
 
     return _FlowBillCard(
       item: item,
@@ -467,7 +538,8 @@ class BillTile extends StatelessWidget {
       leftValue: '-${money(item.amount, item.currency)}',
       leftColor: const Color(0xFFD64545),
       rightLabel: toName,
-      rightValue: '+${money(item.toAmount, item.toCurrency.trim().isEmpty ? item.currency : item.toCurrency)}',
+      rightValue:
+          '+${money(item.toAmount, item.toCurrency.trim().isEmpty ? item.currency : item.toCurrency)}',
       rightColor: const Color(0xFF248B5D),
       onTap: onEdit,
       onDelete: onDelete,
@@ -534,10 +606,14 @@ class _FlowBillCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
+                  child: Icon(icon,
+                      size: 22, color: Theme.of(context).colorScheme.primary),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -572,7 +648,8 @@ class _FlowSide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final align = alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final align =
+        alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final textAlign = alignRight ? TextAlign.right : TextAlign.left;
     return Column(
       crossAxisAlignment: align,
@@ -595,7 +672,8 @@ class _FlowSide extends StatelessWidget {
           width: double.infinity,
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
+            alignment:
+                alignRight ? Alignment.centerRight : Alignment.centerLeft,
             child: Text(
               value,
               maxLines: 1,
@@ -647,7 +725,6 @@ bool _billUsesNoteAsTitle(BillItem item) {
   return item.category == 'otherExpense' || item.category == 'otherIncome';
 }
 
-
 String _billMeta(BillItem item) {
   // 普通收入/支出卡片尽量简约：标题显示分类/备注，下面优先显示资金账户。
   // 没有绑定资金账户时再显示日期，避免一行里信息过多导致大字体被截断。
@@ -668,7 +745,8 @@ void _showImagePreview(BuildContext context, String imageBase64) {
             InteractiveViewer(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(22),
-                child: Image.memory(bytes, fit: BoxFit.contain, gaplessPlayback: true),
+                child: Image.memory(bytes,
+                    fit: BoxFit.contain, gaplessPlayback: true),
               ),
             ),
             Positioned(
@@ -695,14 +773,18 @@ class _BillIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final color = item.isInvestmentBill
+    final color = item.isInvestmentBill
         ? Theme.of(context).colorScheme.primary
         : (item.isIncome ? const Color(0xFF248B5D) : const Color(0xFFD64545));
-    final icon = item.isInvestmentBill ? Icons.swap_horiz_rounded : _billIconData(item.category, item.isIncome);
+    final icon = item.isInvestmentBill
+        ? Icons.swap_horiz_rounded
+        : _billIconData(item.category, item.isIncome);
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(16)),
       child: Icon(icon, color: color),
     );
   }
