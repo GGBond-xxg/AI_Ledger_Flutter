@@ -536,9 +536,9 @@ class _AssetsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final selected = store.selectedAssetTab.value;
-      final normalAssets = store.assets.where((e) => e.isNormalAsset).toList();
-      final investments = store.assets.where((e) => e.isInvestment).toList();
-      final debts = store.debts.toList();
+      final normalAssets = store.displayAssets(investment: false);
+      final investments = store.displayAssets(investment: true);
+      final debts = store.displayDebts;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,

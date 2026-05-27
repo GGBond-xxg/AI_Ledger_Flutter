@@ -587,6 +587,76 @@ class LedgerStore extends GetxController {
     update();
   }
 
+  Future<void> toggleShowZeroItems() async {
+    settings = settings.copyWith(showZeroItems: !settings.showZeroItems);
+    await save();
+    update();
+  }
+
+  Future<void> toggleAssetSortOrder() async {
+    settings = settings.copyWith(assetSortAscending: !settings.assetSortAscending);
+    await save();
+    update();
+  }
+
+  List<AssetItem> displayAssets({required bool investment}) {
+    final list = assets.where((item) {
+      if (item.isInvestment != investment) return false;
+      if (settings.showZeroItems) return true;
+      return !_assetIsZero(item);
+    }).toList(growable: true);
+
+    list.sort((a, b) {
+      final av = _assetSortValue(a);
+      final bv = _assetSortValue(b);
+      final result = av.compareTo(bv);
+      if (result != 0) {
+        return settings.assetSortAscending ? result : -result;
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return list;
+  }
+
+  List<DebtItem> get displayDebts {
+    final list = debts.where((item) {
+      if (settings.showZeroItems) return true;
+      return item.amount.abs() > 0.000000001;
+    }).toList(growable: true);
+
+    list.sort((a, b) {
+      final av = _debtSortValue(a);
+      final bv = _debtSortValue(b);
+      final result = av.compareTo(bv);
+      if (result != 0) {
+        return settings.assetSortAscending ? result : -result;
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return list;
+  }
+
+  bool _assetIsZero(AssetItem item) {
+    if (item.type == 'manual') {
+      return (item.quantity * item.manualPrice).abs() <= 0.000000001;
+    }
+    return item.quantity.abs() <= 0.000000001;
+  }
+
+  double _assetSortValue(AssetItem item) {
+    final value = numFromPath(valuationAsset(item.id), ['value']) ?? _localAssetValue(item);
+    return value.isFinite ? value : 0;
+  }
+
+  double _debtSortValue(DebtItem item) {
+    final value = numFromPath(valuationDebt(item.id), ['value']);
+    if (value != null && value.isFinite) return value;
+    if (item.currency.toUpperCase() == settings.defaultCurrency.toUpperCase()) {
+      return item.amount;
+    }
+    return item.amount;
+  }
+
   List<BillItem> get monthlyBills {
     billsVersion.value;
     final month = selectedBillMonth.value;

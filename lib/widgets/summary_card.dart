@@ -93,9 +93,33 @@ class SummaryCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                '${'updatedAt'.tr}：${shortTime(store.updatedAt, fallback: 'notRefreshed'.tr)}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${'updatedAt'.tr}：${shortTime(store.updatedAt, fallback: 'notRefreshed'.tr)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _SummaryActionChip(
+                    icon: store.settings.showZeroItems
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                    label: store.settings.showZeroItems ? 'hideZeroItems'.tr : 'showZeroItems'.tr,
+                    onTap: () => store.toggleShowZeroItems(),
+                  ),
+                  const SizedBox(width: 6),
+                  _SummaryActionChip(
+                    icon: store.settings.assetSortAscending
+                        ? Icons.arrow_upward_rounded
+                        : Icons.arrow_downward_rounded,
+                    label: store.settings.assetSortAscending ? 'sortSmallToLarge'.tr : 'sortLargeToSmall'.tr,
+                    onTap: () => store.toggleAssetSortOrder(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -135,6 +159,59 @@ class _Metric extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+
+class _SummaryActionChip extends StatelessWidget {
+  const _SummaryActionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 15),
+              const SizedBox(width: 4),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 42),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

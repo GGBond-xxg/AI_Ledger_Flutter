@@ -13,6 +13,8 @@ class LedgerSettings {
     this.appPinSalt = '',
     this.appPinHash = '',
     this.appLockFailedAttempts = 0,
+    this.showZeroItems = false,
+    this.assetSortAscending = false,
   });
 
   String apiBaseUrl;
@@ -42,6 +44,12 @@ class LedgerSettings {
 
   /// 独立密码输错次数。达到 8 次会清空本地数据。
   int appLockFailedAttempts;
+
+  /// 资产页是否显示数量/金额为 0 的资金、理财、借款记录。默认隐藏。
+  bool showZeroItems;
+
+  /// 资产页排序方向。false = 默认从大到小，true = 从小到大。
+  bool assetSortAscending;
 
   bool get hasPin => appPinSalt.trim().isNotEmpty && appPinHash.trim().isNotEmpty;
   bool get useDeviceLock => appLockEnabled && appBiometricsEnabled && hasPin;
@@ -76,6 +84,8 @@ class LedgerSettings {
       appPinSalt: pinSalt,
       appPinHash: pinHash,
       appLockFailedAttempts: ((json['appLockFailedAttempts'] as num?)?.toInt().clamp(0, 8) ?? 0).toInt(),
+      showZeroItems: json['showZeroItems'] == true,
+      assetSortAscending: json['assetSortAscending'] == true,
     );
   }
 
@@ -91,6 +101,8 @@ class LedgerSettings {
         'appPinSalt': appPinSalt,
         'appPinHash': appPinHash,
         'appLockFailedAttempts': appLockFailedAttempts,
+        'showZeroItems': showZeroItems,
+        'assetSortAscending': assetSortAscending,
       };
 
   LedgerSettings copyWith({
@@ -105,6 +117,8 @@ class LedgerSettings {
     String? appPinSalt,
     String? appPinHash,
     int? appLockFailedAttempts,
+    bool? showZeroItems,
+    bool? assetSortAscending,
   }) {
     return LedgerSettings(
       apiBaseUrl: apiBaseUrl ?? this.apiBaseUrl,
@@ -118,6 +132,8 @@ class LedgerSettings {
       appPinSalt: appPinSalt ?? this.appPinSalt,
       appPinHash: appPinHash ?? this.appPinHash,
       appLockFailedAttempts: appLockFailedAttempts ?? this.appLockFailedAttempts,
+      showZeroItems: showZeroItems ?? this.showZeroItems,
+      assetSortAscending: assetSortAscending ?? this.assetSortAscending,
     );
   }
 }
