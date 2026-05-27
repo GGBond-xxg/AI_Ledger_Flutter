@@ -12,7 +12,7 @@
   "updatedAt": "更新時間",
   "notRefreshed": "未重新整理",
   "assetsDesc": "現金、銀行卡、手動估值資產。",
-  "investmentsDesc": "股票、ETF、貴金屬、虛擬幣。",
+  "investmentsDesc": "美股、美股ETF、A股、A股ETF、貴金屬、虛擬幣。",
   "debtsDesc": "我欠别人、别人欠我、本機凭證。",
   "emptyAssetsTitle": "還沒有新增資產",
   "emptyAssetsSubtitle": "先記錄銀行卡、現金或手動估值資產，淨資產卡片会自動匯總。",

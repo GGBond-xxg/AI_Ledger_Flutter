@@ -116,7 +116,12 @@ class LedgerStore extends GetxController {
             .whereType<Map>()
             .map((e) => BillItem.fromJson(e.cast<String, dynamic>())));
       valuation = _withoutTransientQuoteErrors((data['valuation'] as Map?)?.cast<String, dynamic>());
+      final deduped = _dedupeInvestmentAssets();
       _touchBills();
+      if (deduped) {
+        _syncValuationAfterLocalChange();
+        await save();
+      }
     } catch (_) {
       // 本地数据损坏时不让 App 崩溃。
     }
@@ -696,6 +701,103 @@ class LedgerStore extends GetxController {
   List<AssetItem> get billLinkedInvestments =>
       assets.where((item) => item.isInvestment).toList(growable: false);
 
+
+  String _investmentIdentityKey(AssetItem item) {
+    if (!item.isInvestment) return '';
+    final type = item.type.trim().toLowerCase();
+    final symbol = item.symbol.trim().toUpperCase();
+    final name = item.name.trim().toLowerCase();
+    final currency = item.currency.trim().toUpperCase();
+    final unit = item.unit.trim().toLowerCase();
+
+    // 股票/ETF/虚拟币优先按代码合并；黄金/手动没有代码时再按名称兜底。
+    final core = symbol.isNotEmpty ? symbol : name;
+    if (core.isEmpty) return '';
+    return '$type|$core|$currency|$unit';
+  }
+
+  int _findInvestmentMergeTargetIndex(AssetItem item, {String exceptId = ''}) {
+    final key = _investmentIdentityKey(item);
+    if (key.isEmpty) return -1;
+    return assets.indexWhere((asset) =>
+        asset.id != exceptId &&
+        asset.isInvestment &&
+        _investmentIdentityKey(asset) == key);
+  }
+
+  void _fillMissingInvestmentFields(AssetItem target, AssetItem source) {
+    if (target.name.trim().isEmpty || target.name.trim() == '未命名资产') {
+      target.name = source.name;
+    }
+    if (target.symbol.trim().isEmpty && source.symbol.trim().isNotEmpty) {
+      target.symbol = source.symbol;
+    }
+    if (target.currency.trim().isEmpty && source.currency.trim().isNotEmpty) {
+      target.currency = source.currency;
+    }
+    if (target.unit.trim().isEmpty && source.unit.trim().isNotEmpty) {
+      target.unit = source.unit;
+    }
+    if (target.manualPrice <= 0 && source.manualPrice > 0) {
+      target.manualPrice = source.manualPrice;
+    }
+    if (target.note.trim().isEmpty && source.note.trim().isNotEmpty) {
+      target.note = source.note;
+    }
+  }
+
+  void _redirectInvestmentBills({required String fromId, required AssetItem toAsset}) {
+    if (fromId.trim().isEmpty || fromId == toAsset.id) return;
+    var touched = false;
+    for (final bill in bills) {
+      if (bill.investmentAssetId == fromId) {
+        bill.investmentAssetId = toAsset.id;
+        bill.investmentAssetName = toAsset.name;
+        touched = true;
+      }
+    }
+    if (touched) _touchBills();
+  }
+
+  bool _dedupeInvestmentAssets() {
+    final keyToIndex = <String, int>{};
+    final rebuilt = <AssetItem>[];
+    final redirects = <String, AssetItem>{};
+    var changed = false;
+
+    for (final asset in assets) {
+      if (!asset.isInvestment) {
+        rebuilt.add(asset);
+        continue;
+      }
+
+      final key = _investmentIdentityKey(asset);
+      final existingIndex = key.isEmpty ? null : keyToIndex[key];
+      if (existingIndex == null) {
+        if (key.isNotEmpty) keyToIndex[key] = rebuilt.length;
+        rebuilt.add(asset);
+        continue;
+      }
+
+      final target = rebuilt[existingIndex];
+      target.quantity += asset.quantity;
+      if (target.quantity.abs() < 0.000000001) {
+        target.quantity = 0;
+      }
+      _fillMissingInvestmentFields(target, asset);
+      redirects[asset.id] = target;
+      changed = true;
+    }
+
+    if (!changed) return false;
+
+    assets.assignAll(rebuilt);
+    for (final entry in redirects.entries) {
+      _redirectInvestmentBills(fromId: entry.key, toAsset: entry.value);
+    }
+    return true;
+  }
+
   void reorderAssets({required bool investment, required int oldIndex, required int newIndex}) {
     final group = assets.where((item) => item.isInvestment == investment).toList(growable: true);
     if (oldIndex < 0 || oldIndex >= group.length) return;
@@ -729,7 +831,22 @@ class LedgerStore extends GetxController {
   }
 
   Future<void> addAsset(AssetItem item) async {
-    assets.insert(0, item);
+    if (item.isInvestment) {
+      final targetIndex = _findInvestmentMergeTargetIndex(item);
+      if (targetIndex >= 0) {
+        final target = assets[targetIndex];
+        target.quantity += item.quantity;
+        if (target.quantity.abs() < 0.000000001) {
+          target.quantity = 0;
+        }
+        _fillMissingInvestmentFields(target, item);
+        assets[targetIndex] = target;
+      } else {
+        assets.insert(0, item);
+      }
+    } else {
+      assets.insert(0, item);
+    }
     _syncValuationAfterLocalChange();
     await save();
     update();
@@ -747,19 +864,33 @@ class LedgerStore extends GetxController {
         break;
       }
     }
-    assets.insert(0, investment);
+
+    AssetItem billInvestment = investment;
+    final targetIndex = _findInvestmentMergeTargetIndex(investment);
+    if (targetIndex >= 0) {
+      final target = assets[targetIndex];
+      target.quantity += investment.quantity;
+      if (target.quantity.abs() < 0.000000001) {
+        target.quantity = 0;
+      }
+      _fillMissingInvestmentFields(target, investment);
+      assets[targetIndex] = target;
+      billInvestment = target;
+    } else {
+      assets.insert(0, investment);
+    }
 
     if (fund != null && fundAmount > 0) {
       final bill = BillItem(
-        id: _newBillIdForInvestment(investment.id),
+        id: newId(),
         type: 'investment',
         category: 'investmentBuy',
         amount: fundAmount,
         currency: fund.currency,
         assetId: fund.id,
         assetName: fund.name,
-        investmentAssetId: investment.id,
-        investmentAssetName: investment.name,
+        investmentAssetId: billInvestment.id,
+        investmentAssetName: billInvestment.name,
         investmentQuantity: investment.quantity,
         note: investment.note,
       );
@@ -769,20 +900,42 @@ class LedgerStore extends GetxController {
       _touchBills();
     }
 
+    _dedupeInvestmentAssets();
     _syncValuationAfterLocalChange();
     await save();
     update();
   }
 
-  String _newBillIdForInvestment(String investmentId) => 'bill_$investmentId';
-
   Future<void> updateAsset(AssetItem item) async {
-    final index = assets.indexWhere((e) => e.id == item.id);
-    if (index >= 0) {
-      assets[index] = item;
+    if (item.isInvestment) {
+      final targetIndex = _findInvestmentMergeTargetIndex(item, exceptId: item.id);
+      if (targetIndex >= 0) {
+        final target = assets[targetIndex];
+        target.quantity += item.quantity;
+        if (target.quantity.abs() < 0.000000001) {
+          target.quantity = 0;
+        }
+        _fillMissingInvestmentFields(target, item);
+        assets[targetIndex] = target;
+        assets.removeWhere((asset) => asset.id == item.id);
+        _redirectInvestmentBills(fromId: item.id, toAsset: target);
+      } else {
+        final index = assets.indexWhere((e) => e.id == item.id);
+        if (index >= 0) {
+          assets[index] = item;
+        } else {
+          assets.insert(0, item);
+        }
+      }
     } else {
-      assets.insert(0, item);
+      final index = assets.indexWhere((e) => e.id == item.id);
+      if (index >= 0) {
+        assets[index] = item;
+      } else {
+        assets.insert(0, item);
+      }
     }
+    _dedupeInvestmentAssets();
     _syncValuationAfterLocalChange();
     await save();
     update();

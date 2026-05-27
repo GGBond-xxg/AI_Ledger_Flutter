@@ -12,7 +12,7 @@
   "updatedAt": "Updated",
   "notRefreshed": "Not refreshed",
   "assetsDesc": "Cash, bank cards, and manual assets.",
-  "investmentsDesc": "Stocks, ETFs, Metals, Crypto.",
+  "investmentsDesc": "US stocks, US ETFs, A-shares, A-share ETFs, metals, and crypto.",
   "debtsDesc": "Payables, receivables, and local proof images.",
   "emptyAssetsTitle": "No assets yet",
   "emptyAssetsSubtitle": "Add cash, bank accounts, or manual assets. The net worth card will summarize them.",
