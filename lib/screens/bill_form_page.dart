@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -282,12 +284,10 @@ class _BillFormPageState extends State<BillFormPage> {
       createdAt: existing?.createdAt,
     );
 
-    if (_isEditing) {
-      await store.updateBill(item);
-    } else {
-      await store.addBill(item);
-    }
+    final Future<void> saveFuture =
+        _isEditing ? store.updateBill(item) : store.addBill(item);
     if (mounted) Get.back<void>();
+    unawaited(saveFuture.catchError((_) {}));
   }
 }
 

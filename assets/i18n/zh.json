@@ -12,7 +12,7 @@
   "updatedAt": "更新时间",
   "notRefreshed": "未刷新",
   "assetsDesc": "现金、银行卡、手动估值资产。",
-  "investmentsDesc": "美股、美股ETF、A股、A股ETF、贵金属、虚拟币。",
+  "investmentsDesc": "股票、ETF、贵金属、虚拟币。",
   "debtsDesc": "我欠别人、别人欠我、本地凭证。",
   "emptyAssetsTitle": "还没有添加资产",
   "emptyAssetsSubtitle": "先记录银行卡、现金或手动估值资产，净资产卡片会自动汇总。",

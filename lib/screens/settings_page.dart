@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter/services.dart';
@@ -191,8 +193,8 @@ class _SettingsPageState extends State<SettingsPage> {
       languageMode: _languageMode,
     );
     await store.updateSettings(settings);
-    await store.refreshValuation(force: true, source: 'settingsSaved');
     if (mounted && showToast) _toast('settingsSaved'.tr);
+    unawaited(store.refreshValuation(force: true, source: 'settingsSaved').catchError((_) {}));
   }
 
   Future<void> _testApi() async {

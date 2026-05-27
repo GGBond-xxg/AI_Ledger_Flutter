@@ -434,23 +434,27 @@ class _AssetFormPageState extends State<AssetFormPage> {
       createdAt: existing?.createdAt,
     );
 
+    final Future<void> saveFuture;
     if (_isEditing) {
-      await store.updateAsset(item);
+      saveFuture = store.updateAsset(item);
     } else {
       final selectedFund = _findAssetById(store.billLinkedAssets, _fundAssetId);
       final fundAmount = double.tryParse(_fundAmountController.text.trim()) ?? 0;
       if (item.isInvestment && selectedFund != null && fundAmount > 0) {
-        await store.addInvestmentWithFunding(
+        saveFuture = store.addInvestmentWithFunding(
           investment: item,
           fundAssetId: selectedFund.id,
           fundAmount: fundAmount,
         );
       } else {
-        await store.addAsset(item);
+        saveFuture = store.addAsset(item);
       }
     }
-    await store.refreshValuation(force: true, source: 'assetSaved');
+
+    // 本地列表会在 store 方法进入第一个 await 前同步更新；页面先返回，避免保存/估值刷新时卡在表单页。
     if (mounted) Get.back<void>();
+    unawaited(saveFuture.catchError((_) {}));
+    unawaited(store.refreshValuation(force: true, source: 'assetSaved'));
   }
 }
 

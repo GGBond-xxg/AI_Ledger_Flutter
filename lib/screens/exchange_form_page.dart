@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -204,13 +206,11 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       createdAt: widget.existing?.createdAt,
     );
 
-    if (_isEditing) {
-      await store.updateBill(item);
-    } else {
-      await store.addBill(item);
-    }
-    await store.refreshValuation(force: true, source: 'exchangeSaved');
+    final Future<void> saveFuture =
+        _isEditing ? store.updateBill(item) : store.addBill(item);
     if (mounted) Get.back<void>();
+    unawaited(saveFuture.catchError((_) {}));
+    unawaited(store.refreshValuation(force: true, source: 'exchangeSaved'));
   }
 }
 

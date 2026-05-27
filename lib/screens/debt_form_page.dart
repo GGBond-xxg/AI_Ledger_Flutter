@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -178,13 +180,13 @@ class _DebtFormPageState extends State<DebtFormPage> {
       createdAt: existing?.createdAt,
     );
 
-    if (_isEditing) {
-      await store.updateDebt(item);
-    } else {
-      await store.addDebt(item);
-    }
-    await store.refreshValuation(force: true, source: 'debtSaved');
+    final Future<void> saveFuture =
+        _isEditing ? store.updateDebt(item) : store.addDebt(item);
+
+    // 先退出当前页，保存和估值刷新放后台执行，避免用户感觉“保存后卡住/不退出”。
     if (mounted) Get.back<void>();
+    unawaited(saveFuture.catchError((_) {}));
+    unawaited(store.refreshValuation(force: true, source: 'debtSaved'));
   }
 }
 
