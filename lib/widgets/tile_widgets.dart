@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -214,20 +215,68 @@ class _DebtImageThumbs extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: valid.map((imageBase64) {
-        try {
-          final bytes = base64Decode(imageBase64);
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              onTap: () => _showImagePreview(context, imageBase64),
-              child: Image.memory(bytes, width: 72, height: 54, fit: BoxFit.cover),
-            ),
-          );
-        } catch (_) {
-          return const SizedBox.shrink();
-        }
-      }).toList(),
+      children: valid
+          .map((imageBase64) => _DebtImageThumb(
+                key: ValueKey(imageBase64),
+                imageBase64: imageBase64,
+              ))
+          .toList(),
+    );
+  }
+}
+
+class _DebtImageThumb extends StatefulWidget {
+  const _DebtImageThumb({super.key, required this.imageBase64});
+
+  final String imageBase64;
+
+  @override
+  State<_DebtImageThumb> createState() => _DebtImageThumbState();
+}
+
+class _DebtImageThumbState extends State<_DebtImageThumb> {
+  Uint8List? _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _decode();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DebtImageThumb oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageBase64 != widget.imageBase64) {
+      _decode();
+    }
+  }
+
+  void _decode() {
+    try {
+      _bytes = base64Decode(widget.imageBase64);
+    } catch (_) {
+      _bytes = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = _bytes;
+    if (bytes == null) return const SizedBox.shrink();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => _showImagePreview(context, widget.imageBase64),
+        child: Image.memory(
+          bytes,
+          width: 72,
+          height: 54,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          filterQuality: FilterQuality.low,
+        ),
+      ),
     );
   }
 }
@@ -306,6 +355,13 @@ class BillTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (item.isExchangeBill) {
+      return _buildExchangeBill(context);
+    }
+    if (item.isInvestmentBill) {
+      return _buildInvestmentBill(context);
+    }
+
     final color = item.isIncome ? const Color(0xFF248B5D) : const Color(0xFFD64545);
     final title = _billTitle(item);
     final noteUsedAsTitle = _billUsesNoteAsTitle(item);
@@ -366,6 +422,214 @@ class BillTile extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildInvestmentBill(BuildContext context) {
+    final isSell = item.isInvestmentSell;
+    final investmentColor = isSell ? const Color(0xFFD64545) : const Color(0xFF248B5D);
+    final fundColor = isSell ? const Color(0xFF248B5D) : const Color(0xFFD64545);
+    final investmentName = item.investmentAssetName.trim().isEmpty ? 'investment'.tr : item.investmentAssetName.trim();
+    final fundName = item.assetName.trim().isEmpty ? 'linkedAsset'.tr : item.assetName.trim();
+    final investmentAmount = '${isSell ? '-' : '+'}${trimNum(item.investmentQuantity)}';
+    final fundAmount = '${isSell ? '+' : '-'}${money(item.amount, item.currency)}';
+    final flowText = isSell ? '$investmentName → $fundName' : '$fundName → $investmentName';
+
+    return Dismissible(
+      key: ValueKey(item.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async => await _confirmDelete(context, investmentName),
+      onDismissed: (_) => onDelete(),
+      background: const _DeleteBackground(),
+      child: Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onEdit,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(Icons.swap_horiz_rounded, color: Theme.of(context).colorScheme.primary),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${trBillCategory(item.category)} · $investmentName',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '$flowText · ${dateText(item.occurredAt)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: AppTheme.textSubtle(context)),
+                      ),
+                      if (item.note.trim().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          item.note,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 148,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _BillFlowAmount(
+                        label: fundName,
+                        value: fundAmount,
+                        color: fundColor,
+                      ),
+                      const SizedBox(height: 6),
+                      _BillFlowAmount(
+                        label: investmentName,
+                        value: investmentAmount,
+                        color: investmentColor,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExchangeBill(BuildContext context) {
+    final fromName = item.assetName.trim().isEmpty ? 'fromFundAccount'.tr : item.assetName.trim();
+    final toName = item.toAssetName.trim().isEmpty ? 'toFundAccount'.tr : item.toAssetName.trim();
+    final fromAmount = '-${money(item.amount, item.currency)}';
+    final toAmount = '+${money(item.toAmount, item.toCurrency.trim().isEmpty ? item.currency : item.toCurrency)}';
+
+    return Dismissible(
+      key: ValueKey(item.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async => await _confirmDelete(context, '${'exchangeBill'.tr} $fromName → $toName'),
+      onDismissed: (_) => onDelete(),
+      background: const _DeleteBackground(),
+      child: Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onEdit,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(Icons.swap_horiz_rounded, color: Theme.of(context).colorScheme.primary),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${'exchangeBill'.tr} · $fromName → $toName',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        dateText(item.occurredAt),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: AppTheme.textSubtle(context)),
+                      ),
+                      if (item.note.trim().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          item.note,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 12),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 148,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _BillFlowAmount(label: fromName, value: fromAmount, color: const Color(0xFFD64545)),
+                      const SizedBox(height: 6),
+                      _BillFlowAmount(label: toName, value: toAmount, color: const Color(0xFF248B5D)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BillFlowAmount extends StatelessWidget {
+  const _BillFlowAmount({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.right,
+          style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 11, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: TextStyle(fontSize: 15, height: 1.1, fontWeight: FontWeight.w900, color: color),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 String _billTitle(BillItem item) {
@@ -407,7 +671,7 @@ void _showImagePreview(BuildContext context, String imageBase64) {
             InteractiveViewer(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(22),
-                child: Image.memory(bytes, fit: BoxFit.contain),
+                child: Image.memory(bytes, fit: BoxFit.contain, gaplessPlayback: true),
               ),
             ),
             Positioned(
@@ -434,8 +698,10 @@ class _BillIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = item.isIncome ? const Color(0xFF248B5D) : const Color(0xFFD64545);
-    final icon = _billIconData(item.category, item.isIncome);
+      final color = item.isInvestmentBill
+        ? Theme.of(context).colorScheme.primary
+        : (item.isIncome ? const Color(0xFF248B5D) : const Color(0xFFD64545));
+    final icon = item.isInvestmentBill ? Icons.swap_horiz_rounded : _billIconData(item.category, item.isIncome);
     return Container(
       width: 44,
       height: 44,

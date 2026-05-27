@@ -114,7 +114,7 @@ class LedgerStore extends GetxController {
         ..addAll(((data['bills'] as List?) ?? [])
             .whereType<Map>()
             .map((e) => BillItem.fromJson(e.cast<String, dynamic>())));
-      valuation = (data['valuation'] as Map?)?.cast<String, dynamic>();
+      valuation = _withoutTransientQuoteErrors((data['valuation'] as Map?)?.cast<String, dynamic>());
       _touchBills();
     } catch (_) {
       // 本地数据损坏时不让 App 崩溃。
@@ -162,6 +162,7 @@ class LedgerStore extends GetxController {
   /// 截图、下拉状态栏这类只触发 inactive 的场景不会调用它，避免锁屏过于敏感。
   void markAppForegrounded() {
     appInForeground = true;
+    _clearTransientQuoteErrors();
     if (!settings.appLockEnabled) {
       privacySnapshotVisible = false;
       return;
@@ -176,8 +177,27 @@ class LedgerStore extends GetxController {
   /// 这类场景保持前台状态，不主动锁 App。
   void markAppStillForegrounded() {
     appInForeground = true;
+    _clearTransientQuoteErrors();
     if (!appLocked) {
       privacySnapshotVisible = false;
+    }
+  }
+
+  Map<String, dynamic>? _withoutTransientQuoteErrors(Map<String, dynamic>? source) {
+    if (source == null) return null;
+    if ((source['failedAssets'] as List?)?.isNotEmpty == true) {
+      return {...source, 'failedAssets': []};
+    }
+    return source;
+  }
+
+  void _clearTransientQuoteErrors() {
+    lastError = null;
+    final current = valuation;
+    final cleaned = _withoutTransientQuoteErrors(current);
+    if (!identical(cleaned, current)) {
+      valuation = cleaned;
+      save();
     }
   }
 
@@ -441,8 +461,51 @@ class LedgerStore extends GetxController {
   }
 
   void _applyBillAssetEffect(BillItem item, {bool reverse = false}) {
+    if (item.isExchangeBill) {
+      _applyBillExchangeEffect(item, reverse: reverse);
+      return;
+    }
     _applyBillFundEffect(item, reverse: reverse);
     _applyBillInvestmentEffect(item, reverse: reverse);
+  }
+
+  void _applyBillExchangeEffect(BillItem item, {bool reverse = false}) {
+    if (item.assetId.trim().isEmpty ||
+        item.toAssetId.trim().isEmpty ||
+        item.amount <= 0 ||
+        item.toAmount <= 0) {
+      return;
+    }
+
+    final fromIndex = assets.indexWhere((asset) =>
+        asset.id == item.assetId &&
+        asset.type == 'cash' &&
+        asset.currency.toUpperCase() == item.currency.toUpperCase());
+    final toIndex = assets.indexWhere((asset) =>
+        asset.id == item.toAssetId &&
+        asset.type == 'cash' &&
+        asset.currency.toUpperCase() == item.toCurrency.toUpperCase());
+    if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) return;
+
+    final fromAsset = assets[fromIndex];
+    final toAsset = assets[toIndex];
+    var fromDelta = -item.amount;
+    var toDelta = item.toAmount;
+    if (reverse) {
+      fromDelta = -fromDelta;
+      toDelta = -toDelta;
+    }
+
+    fromAsset.quantity += fromDelta;
+    toAsset.quantity += toDelta;
+    if (fromAsset.quantity.abs() < 0.000000001) {
+      fromAsset.quantity = 0;
+    }
+    if (toAsset.quantity.abs() < 0.000000001) {
+      toAsset.quantity = 0;
+    }
+    assets[fromIndex] = fromAsset;
+    assets[toIndex] = toAsset;
   }
 
   void _applyBillFundEffect(BillItem item, {bool reverse = false}) {
@@ -457,12 +520,21 @@ class LedgerStore extends GetxController {
     // do not mutate the asset to avoid silently converting money without an FX rate.
     if (asset.currency.toUpperCase() != item.currency.toUpperCase()) return;
 
-    var delta = item.isIncome ? item.amount : -item.amount;
+    double delta;
+    if (item.isInvestmentBill) {
+      // Buying investments spends funds; selling investments receives funds.
+      delta = item.isInvestmentSell ? item.amount : -item.amount;
+    } else {
+      delta = item.isIncome ? item.amount : -item.amount;
+    }
     if (reverse) {
       delta = -delta;
     }
 
     asset.quantity += delta;
+    if (asset.quantity.abs() < 0.000000001) {
+      asset.quantity = 0;
+    }
     assets[index] = asset;
   }
 
@@ -474,8 +546,14 @@ class LedgerStore extends GetxController {
 
     final asset = assets[index];
 
-    // Expense means buying an investment with funds; income means selling/reducing investment.
-    var delta = item.isIncome ? -item.investmentQuantity : item.investmentQuantity;
+    double delta;
+    if (item.isInvestmentBill) {
+      // Investment bill: buy increases holdings, sell reduces holdings.
+      delta = item.isInvestmentSell ? -item.investmentQuantity : item.investmentQuantity;
+    } else {
+      // Backward compatibility: old expense+investment means buy, income+investment means sell.
+      delta = item.isIncome ? -item.investmentQuantity : item.investmentQuantity;
+    }
     if (reverse) {
       delta = -delta;
     }
@@ -513,15 +591,101 @@ class LedgerStore extends GetxController {
     return list;
   }
 
-  double get monthlyIncomeTotal => monthlyBills
-      .where((e) => e.isIncome && e.currency == settings.defaultCurrency)
-      .fold<double>(0, (sum, item) => sum + item.amount);
+  /// 月度汇总只统计真实收入/支出。
+  /// 理财买入/卖出、换汇属于资产内部转换，会显示在账单列表里，但不计入收入、支出、结余。
+  List<BillItem> get monthlyIncomeExpenseBills => monthlyBills
+      .where((e) => e.isIncome || e.isExpense)
+      .toList(growable: false);
 
-  double get monthlyExpenseTotal => monthlyBills
-      .where((e) => e.isExpense && e.currency == settings.defaultCurrency)
-      .fold<double>(0, (sum, item) => sum + item.amount);
+  double get monthlyIncomeTotal => monthlyIncomeExpenseBills
+      .where((e) => e.isIncome)
+      .fold<double>(0, (sum, item) => sum + _billAmountInDefaultCurrency(item));
+
+  double get monthlyExpenseTotal => monthlyIncomeExpenseBills
+      .where((e) => e.isExpense)
+      .fold<double>(0, (sum, item) => sum + _billAmountInDefaultCurrency(item));
 
   double get monthlyBillNet => monthlyIncomeTotal - monthlyExpenseTotal;
+
+  /// 将账单金额统一折算到默认估值货币后汇总。
+  /// 之前这里只统计与默认货币相同的账单，所以 EUR/USD 账单会显示 0。
+  /// 现在优先使用账单绑定的现金资产汇率；没有绑定时，使用同币种现金资产的估值汇率。
+  /// 如果确实没有任何可用汇率，才跳过该笔，避免把不同币种直接相加。
+  double _billAmountInDefaultCurrency(BillItem item) {
+    final sourceCurrency = item.currency.toUpperCase();
+    final targetCurrency = settings.defaultCurrency.toUpperCase();
+    if (sourceCurrency == targetCurrency) {
+      return item.amount;
+    }
+
+    final rate = _fxRateForCurrency(sourceCurrency, preferredAssetId: item.assetId);
+    if (rate == null || rate <= 0) {
+      return 0;
+    }
+    return item.amount * rate;
+  }
+
+  double? _fxRateForCurrency(String sourceCurrency, {String preferredAssetId = ''}) {
+    final source = sourceCurrency.toUpperCase();
+    final target = settings.defaultCurrency.toUpperCase();
+    if (source == target) return 1;
+
+    final candidates = <AssetItem>[];
+    if (preferredAssetId.trim().isNotEmpty) {
+      candidates.addAll(assets.where((asset) =>
+          asset.id == preferredAssetId &&
+          asset.type == 'cash' &&
+          asset.currency.toUpperCase() == source));
+    }
+    candidates.addAll(assets.where((asset) =>
+        asset.type == 'cash' &&
+        asset.currency.toUpperCase() == source &&
+        !candidates.any((existing) => existing.id == asset.id)));
+
+    for (final asset in candidates) {
+      final rate = _cashAssetFxRate(asset);
+      if (rate != null && rate > 0) return rate;
+    }
+    return null;
+  }
+
+  double? _cashAssetFxRate(AssetItem asset) {
+    final valued = valuationAsset(asset.id);
+    final directPrice = _asDouble(valued?['price']);
+    if (directPrice != null && directPrice > 0) {
+      return directPrice;
+    }
+
+    final value = _asDouble(valued?['value']);
+    if (value != null && asset.quantity.abs() > 0.000000001) {
+      return value / asset.quantity;
+    }
+    return null;
+  }
+
+  double get fundsTotal => _assetGroupTotal(investment: false);
+
+  double get investmentTotal => _assetGroupTotal(investment: true);
+
+  double _assetGroupTotal({required bool investment}) {
+    var total = 0.0;
+    for (final item in assets.where((asset) => asset.isInvestment == investment)) {
+      final value = numFromPath(valuationAsset(item.id), ['value']) ?? _localAssetValue(item);
+      total += value;
+    }
+    return total;
+  }
+
+  double _localAssetValue(AssetItem item) {
+    final currency = settings.defaultCurrency;
+    if (item.type == 'cash' && item.currency == currency) {
+      return item.quantity;
+    }
+    if (item.type == 'manual' && item.currency == currency) {
+      return item.quantity * item.manualPrice;
+    }
+    return 0;
+  }
 
   /// Assets that can be linked to bills.
   /// Bills are everyday income/expense records, so they should affect cash/bank style assets only.
@@ -569,6 +733,47 @@ class LedgerStore extends GetxController {
     await save();
     update();
   }
+
+  Future<void> addInvestmentWithFunding({
+    required AssetItem investment,
+    required String fundAssetId,
+    required double fundAmount,
+  }) async {
+    AssetItem? fund;
+    for (final asset in assets) {
+      if (asset.id == fundAssetId && asset.type == 'cash') {
+        fund = asset;
+        break;
+      }
+    }
+    assets.insert(0, investment);
+
+    if (fund != null && fundAmount > 0) {
+      final bill = BillItem(
+        id: _newBillIdForInvestment(investment.id),
+        type: 'investment',
+        category: 'investmentBuy',
+        amount: fundAmount,
+        currency: fund.currency,
+        assetId: fund.id,
+        assetName: fund.name,
+        investmentAssetId: investment.id,
+        investmentAssetName: investment.name,
+        investmentQuantity: investment.quantity,
+        note: investment.note,
+      );
+      bills.insert(0, bill);
+      selectedBillMonth.value = DateTime(bill.occurredAt.year, bill.occurredAt.month);
+      _applyBillFundEffect(bill);
+      _touchBills();
+    }
+
+    _syncValuationAfterLocalChange();
+    await save();
+    update();
+  }
+
+  String _newBillIdForInvestment(String investmentId) => 'bill_$investmentId';
 
   Future<void> updateAsset(AssetItem item) async {
     final index = assets.indexWhere((e) => e.id == item.id);
@@ -736,7 +941,8 @@ class LedgerStore extends GetxController {
         return;
       }
 
-      valuation = remoteValuation;
+      valuation = _mergeRemoteValuationWithPrevious(remoteValuation);
+      lastError = null;
       await save();
     } catch (e) {
       if (refreshId != _refreshSequence || _timedOutRefreshes.contains(refreshId)) {
@@ -774,6 +980,124 @@ class LedgerStore extends GetxController {
     }
   }
 
+
+  Map<String, dynamic> _mergeRemoteValuationWithPrevious(Map<String, dynamic> remote) {
+    final previous = valuation;
+    if (previous == null) return remote;
+
+    final previousAssets = _mapValuationItemsById(previous['assets']);
+    final previousLiabilities = _mapValuationItemsById(previous['liabilities']);
+
+    final remoteAssets = _valuationItemList(remote['assets']);
+    final remoteAssetIds = remoteAssets
+        .map((item) => item['id']?.toString())
+        .whereType<String>()
+        .toSet();
+    final failedAssets = _valuationItemList(remote['failedAssets']);
+    final remainingFailedAssets = <Map<String, dynamic>>[];
+
+    for (final failed in failedAssets) {
+      final id = failed['id']?.toString();
+      if (id == null) {
+        remainingFailedAssets.add(failed);
+        continue;
+      }
+
+      final previousItem = previousAssets[id];
+      if (_hasUsableValuationValue(previousItem)) {
+        if (!remoteAssetIds.contains(id)) {
+          remoteAssets.add({
+            ...previousItem!,
+            'preserved': true,
+            'stale': true,
+            'provider': '${previousItem['provider'] ?? 'previous'} · preserved',
+          });
+          remoteAssetIds.add(id);
+        }
+      } else {
+        remainingFailedAssets.add(failed);
+      }
+    }
+
+    final remoteLiabilities = _valuationItemList(remote['liabilities']);
+    final remoteLiabilityIds = remoteLiabilities
+        .map((item) => item['id']?.toString())
+        .whereType<String>()
+        .toSet();
+    final failedLiabilities = _valuationItemList(remote['failedLiabilities']);
+    final remainingFailedLiabilities = <Map<String, dynamic>>[];
+
+    for (final failed in failedLiabilities) {
+      final id = failed['id']?.toString();
+      if (id == null) {
+        remainingFailedLiabilities.add(failed);
+        continue;
+      }
+
+      final previousItem = previousLiabilities[id];
+      if (_hasUsableValuationValue(previousItem)) {
+        if (!remoteLiabilityIds.contains(id)) {
+          remoteLiabilities.add({
+            ...previousItem!,
+            'preserved': true,
+            'stale': true,
+            'provider': '${previousItem['provider'] ?? 'previous'} · preserved',
+          });
+          remoteLiabilityIds.add(id);
+        }
+      } else {
+        remainingFailedLiabilities.add(failed);
+      }
+    }
+
+    final assetTotal = remoteAssets.fold<double>(
+        0, (sum, item) => sum + (_asDouble(item['value']) ?? 0));
+    final receivableTotal = remoteLiabilities
+        .where((item) => item['direction'] == 'receivable')
+        .fold<double>(0, (sum, item) => sum + (_asDouble(item['value']) ?? 0));
+    final payableTotal = remoteLiabilities
+        .where((item) => item['direction'] == 'payable')
+        .fold<double>(0, (sum, item) => sum + (_asDouble(item['value']) ?? 0));
+
+    return {
+      ...remote,
+      'totals': {
+        ...?((remote['totals'] as Map?)?.cast<String, dynamic>()),
+        'assetTotal': assetTotal,
+        'receivableTotal': receivableTotal,
+        'payableTotal': payableTotal,
+        'netWorth': assetTotal + receivableTotal - payableTotal,
+      },
+      'assets': remoteAssets,
+      'liabilities': remoteLiabilities,
+      'failedAssets': remainingFailedAssets,
+      'failedLiabilities': remainingFailedLiabilities,
+    };
+  }
+
+  Map<String, Map<String, dynamic>> _mapValuationItemsById(dynamic source) {
+    final result = <String, Map<String, dynamic>>{};
+    if (source is! List) return result;
+    for (final item in source) {
+      if (item is Map && item['id'] != null) {
+        result[item['id'].toString()] = item.cast<String, dynamic>();
+      }
+    }
+    return result;
+  }
+
+  List<Map<String, dynamic>> _valuationItemList(dynamic source) {
+    if (source is! List) return <Map<String, dynamic>>[];
+    return source
+        .whereType<Map>()
+        .map((item) => item.cast<String, dynamic>())
+        .toList(growable: true);
+  }
+
+  bool _hasUsableValuationValue(Map<String, dynamic>? item) {
+    final value = _asDouble(item?['value']);
+    return value != null && value.isFinite;
+  }
 
   Map<String, dynamic> _buildValuationPreservingExisting() {
     final currency = settings.defaultCurrency;
@@ -889,7 +1213,7 @@ class LedgerStore extends GetxController {
       },
       'assets': valuedAssets,
       'liabilities': valuedDebts,
-      'failedAssets': (valuation?['failedAssets'] as List?) ?? [],
+      'failedAssets': [],
       'updatedAt': DateTime.now().toIso8601String(),
       'source': 'local_preserved',
     };

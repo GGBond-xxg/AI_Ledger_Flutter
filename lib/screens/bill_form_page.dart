@@ -70,7 +70,11 @@ class _BillFormPageState extends State<BillFormPage> {
   Widget build(BuildContext context) {
     return Obx(() {
       _uiVersion.value;
-      final categories = _type == 'income' ? _incomeCategories : _expenseCategories;
+      final categories = switch (_type) {
+        'income' => _incomeCategories,
+        'investment' => _investmentCategories,
+        _ => _expenseCategories,
+      };
       if (!categories.contains(_category)) {
         _category = categories.first;
       }
@@ -107,11 +111,17 @@ class _BillFormPageState extends State<BillFormPage> {
                         items: [
                           DropdownMenuItem(value: 'expense', child: Text('expense'.tr)),
                           DropdownMenuItem(value: 'income', child: Text('income'.tr)),
+                          if (widget.existing?.isInvestmentBill == true)
+                            DropdownMenuItem(value: 'investment', child: Text('investmentBill'.tr)),
                         ],
                         onChanged: (value) {
                           if (value == null) return;
                           _type = value;
-                          _category = (_type == 'income' ? _incomeCategories : _expenseCategories).first;
+                          _category = switch (_type) {
+                            'income' => _incomeCategories.first,
+                            'investment' => _investmentCategories.first,
+                            _ => _expenseCategories.first,
+                          };
                           _refreshUi();
                         },
                       ),
@@ -168,28 +178,29 @@ class _BillFormPageState extends State<BillFormPage> {
                         )
                       else
                         _ReadonlyValueField(label: 'currency'.tr, value: selectedAsset.currency),
-                      LedgerDropdownField<String>(
-                        label: 'linkedInvestment'.tr,
-                        value: _investmentAssetId,
-                        items: [
-                          DropdownMenuItem(value: '', child: Text('noLinkedInvestment'.tr)),
-                          ...investmentAssets.map((asset) {
-                            final symbol = asset.symbol.trim().isEmpty ? asset.name : asset.symbol.trim();
-                            return DropdownMenuItem(
-                              value: asset.id,
-                              child: Text('${asset.name} · $symbol · ${trimNum(asset.quantity)}'),
-                            );
-                          }),
-                        ],
-                        onChanged: (value) {
-                          _investmentAssetId = value ?? '';
-                          if (_investmentAssetId.isEmpty) {
-                            _investmentQuantityController.clear();
-                          }
-                          _refreshUi();
-                        },
-                      ),
-                      if (selectedInvestment != null)
+                      if (_type == 'investment')
+                        LedgerDropdownField<String>(
+                          label: 'linkedInvestment'.tr,
+                          value: _investmentAssetId,
+                          items: [
+                            DropdownMenuItem(value: '', child: Text('noLinkedInvestment'.tr)),
+                            ...investmentAssets.map((asset) {
+                              final symbol = asset.symbol.trim().isEmpty ? asset.name : asset.symbol.trim();
+                              return DropdownMenuItem(
+                                value: asset.id,
+                                child: Text('${asset.name} · $symbol · ${trimNum(asset.quantity)}'),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            _investmentAssetId = value ?? '';
+                            if (_investmentAssetId.isEmpty) {
+                              _investmentQuantityController.clear();
+                            }
+                            _refreshUi();
+                          },
+                        ),
+                      if (_type == 'investment' && selectedInvestment != null)
                         LedgerTextField(
                           controller: _investmentQuantityController,
                           label: 'investmentQuantity'.tr,
@@ -209,7 +220,7 @@ class _BillFormPageState extends State<BillFormPage> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  _HelpBox(text: 'billLinkedAssetHelp'.tr),
+                  _HelpBox(text: _type == 'investment' ? 'investmentBillHelp'.tr : 'billLinkedAssetHelp'.tr),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
@@ -249,7 +260,11 @@ class _BillFormPageState extends State<BillFormPage> {
     if (!_formKey.currentState!.validate()) return;
     final existing = widget.existing;
     final linkedAsset = _findAssetById(store.billLinkedAssets, _assetId);
-    final linkedInvestment = _findAssetById(store.billLinkedInvestments, _investmentAssetId);
+    final linkedInvestment = _type == 'investment' ? _findAssetById(store.billLinkedInvestments, _investmentAssetId) : null;
+    if (_type == 'investment' && (linkedAsset == null || linkedInvestment == null)) {
+      Get.snackbar('investmentBill'.tr, 'selectFundAndInvestment'.tr);
+      return;
+    }
     final investmentQuantity = linkedInvestment == null ? 0.0 : double.parse(_investmentQuantityController.text.trim());
     final item = BillItem(
       id: existing?.id ?? newId(),
@@ -378,6 +393,11 @@ const List<String> _incomeCategories = [
   'investmentIncome',
   'gift',
   'otherIncome',
+];
+
+const List<String> _investmentCategories = [
+  'investmentBuy',
+  'investmentSell',
 ];
 
 String trBillCategory(String key) => 'billCategory_$key'.tr;

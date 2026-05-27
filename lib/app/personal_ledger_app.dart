@@ -95,6 +95,7 @@ class _PersonalLedgerAppState extends State<PersonalLedgerApp> with WidgetsBindi
       locale: TranslationService.localeFromMode(store.settings.languageMode),
       fallbackLocale: TranslationService.fallbackLocale,
       supportedLocales: TranslationService.supportedLocales,
+      scrollBehavior: const _LedgerScrollBehavior(),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -110,5 +111,25 @@ class _PersonalLedgerAppState extends State<PersonalLedgerApp> with WidgetsBindi
       'dark' => ThemeMode.dark,
       _ => ThemeMode.system,
     };
+  }
+}
+
+class _LedgerScrollBehavior extends MaterialScrollBehavior {
+  const _LedgerScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    // Android 的顶部/底部拉伸/发光效果会让包含本地图片的卡片在边界处闪烁。
+    // 统一关闭边界特效，只保留正常滚动。
+    return child;
+  }
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const ClampingScrollPhysics();
   }
 }

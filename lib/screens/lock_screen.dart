@@ -15,13 +15,15 @@ class AppLockGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = Get.find<LedgerStore>();
     return Obx(() {
-      if (store.appLocked) {
-        return const LockScreen();
-      }
-      if (store.privacySnapshotVisible) {
-        return const PrivacySnapshotScreen();
-      }
-      return child;
+      return Stack(
+        children: [
+          child,
+          if (store.privacySnapshotVisible && !store.appLocked)
+            const Positioned.fill(child: PrivacySnapshotScreen()),
+          if (store.appLocked)
+            const Positioned.fill(child: LockScreen()),
+        ],
+      );
     });
   }
 }

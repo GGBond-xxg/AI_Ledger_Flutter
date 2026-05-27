@@ -36,12 +36,14 @@ class _AssetFormPageState extends State<AssetFormPage> {
   final _symbolController = TextEditingController();
   final _quantityController = TextEditingController();
   final _manualPriceController = TextEditingController();
+  final _fundAmountController = TextEditingController();
   final _noteController = TextEditingController();
 
   late String _type =
       widget.existing?.type ?? (widget.investmentDefault ? 'stock' : 'cash');
   String _currency = 'CNY';
   String _unit = 'gram';
+  String _fundAssetId = '';
   String _lastEditedField = 'name';
   bool _applyingSuggestion = false;
   bool _searchingRemote = false;
@@ -84,6 +86,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
     _symbolController.dispose();
     _quantityController.dispose();
     _manualPriceController.dispose();
+    _fundAmountController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -100,6 +103,8 @@ class _AssetFormPageState extends State<AssetFormPage> {
       final needsManualPrice = _type == 'manual';
       final needsCurrency = ['cash', 'manual'].contains(_type);
       final suggestions = _marketSuggestions();
+      final canLinkFund = !_isEditing && _formForInvestment && store.billLinkedAssets.isNotEmpty;
+      final selectedFundAsset = _findAssetById(store.billLinkedAssets, _fundAssetId);
 
       return Scaffold(
         appBar: AppBar(title: Text(_title())),
@@ -224,6 +229,40 @@ class _AssetFormPageState extends State<AssetFormPage> {
                             return null;
                           },
                         ),
+                      if (canLinkFund) ...[
+                        LedgerDropdownField<String>(
+                          label: 'fundSource'.tr,
+                          value: _fundAssetId,
+                          items: [
+                            DropdownMenuItem(value: '', child: Text('noFundSource'.tr)),
+                            ...store.billLinkedAssets.map((asset) {
+                              return DropdownMenuItem(
+                                value: asset.id,
+                                child: Text('${asset.name} · ${trimNum(asset.quantity)} ${asset.currency}'),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            _fundAssetId = value ?? '';
+                            if (_fundAssetId.isEmpty) {
+                              _fundAmountController.clear();
+                            }
+                            _refreshUi();
+                          },
+                        ),
+                        if (selectedFundAsset != null)
+                          LedgerTextField(
+                            controller: _fundAmountController,
+                            label: 'fundAmount'.trParams({'currency': selectedFundAsset.currency}),
+                            hint: 'fundAmountHint'.tr,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: (value) {
+                              final number = double.tryParse(value?.trim() ?? '');
+                              if (number == null || number <= 0) return 'enterPositiveAmount'.tr;
+                              return null;
+                            },
+                          ),
+                      ],
                       LedgerTextField(
                           controller: _noteController,
                           label: 'noteOptional'.tr,
@@ -370,6 +409,14 @@ class _AssetFormPageState extends State<AssetFormPage> {
     }
   }
 
+  AssetItem? _findAssetById(List<AssetItem> assets, String id) {
+    if (id.trim().isEmpty) return null;
+    for (final asset in assets) {
+      if (asset.id == id) return asset;
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -390,7 +437,17 @@ class _AssetFormPageState extends State<AssetFormPage> {
     if (_isEditing) {
       await store.updateAsset(item);
     } else {
-      await store.addAsset(item);
+      final selectedFund = _findAssetById(store.billLinkedAssets, _fundAssetId);
+      final fundAmount = double.tryParse(_fundAmountController.text.trim()) ?? 0;
+      if (item.isInvestment && selectedFund != null && fundAmount > 0) {
+        await store.addInvestmentWithFunding(
+          investment: item,
+          fundAssetId: selectedFund.id,
+          fundAmount: fundAmount,
+        );
+      } else {
+        await store.addAsset(item);
+      }
     }
     await store.refreshValuation(force: true, source: 'assetSaved');
     if (mounted) Get.back<void>();

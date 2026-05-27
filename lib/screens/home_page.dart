@@ -16,6 +16,7 @@ import '../widgets/tile_widgets.dart';
 import 'asset_form_page.dart';
 import 'bill_form_page.dart';
 import 'debt_form_page.dart';
+import 'exchange_form_page.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -60,7 +61,7 @@ class _HomePageState extends State<HomePage> {
             }
             final assetTab = store.selectedAssetTab.value;
             if (assetTab == 0) {
-              _openAssetForm(false);
+              _openFundActions();
             } else if (assetTab == 1) {
               _openAssetForm(true);
             } else {
@@ -151,8 +152,111 @@ class _HomePageState extends State<HomePage> {
         () => AssetFormPage(investmentDefault: investment, existing: existing));
   }
 
+  void _openFundActions() {
+    Get.bottomSheet<void>(
+      SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+          decoration: BoxDecoration(
+            color: AppTheme.cardColor(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppTheme.textSubtle(context).withValues(alpha: 0.28),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _FundActionTile(
+                icon: Icons.account_balance_wallet_rounded,
+                title: 'addAsset'.tr,
+                subtitle: 'addCashSubtitle'.tr,
+                onTap: () {
+                  Get.back<void>();
+                  _openAssetForm(false);
+                },
+              ),
+              const SizedBox(height: 10),
+              _FundActionTile(
+                icon: Icons.swap_horiz_rounded,
+                title: 'exchangeBill'.tr,
+                subtitle: 'exchangeActionSubtitle'.tr,
+                onTap: () {
+                  Get.back<void>();
+                  Get.to<void>(() => const ExchangeFormPage());
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+    );
+  }
+
   Future<void> _openDebtForm({DebtItem? existing}) async {
     await Get.to<void>(() => DebtFormPage(existing: existing));
+  }
+}
+
+class _FundActionTile extends StatelessWidget {
+  const _FundActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppTheme.inputColor(context),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 3),
+                    Text(subtitle, style: TextStyle(color: AppTheme.textSubtle(context), fontSize: 13)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: AppTheme.textSubtle(context)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -270,8 +374,9 @@ class _BillsPage extends StatelessWidget {
                   child: BillTile(
                     item: item,
                     onDelete: () => store.removeBill(item.id),
-                    onEdit: () =>
-                        Get.to<void>(() => BillFormPage(existing: item)),
+                    onEdit: () => item.isExchangeBill
+                        ? Get.to<void>(() => ExchangeFormPage(existing: item))
+                        : Get.to<void>(() => BillFormPage(existing: item)),
                   ),
                 )),
         ],
@@ -339,26 +444,41 @@ class _BillSummaryCard extends StatelessWidget {
     final currency = store.settings.defaultCurrency;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           children: [
-            Expanded(
-                child: _BillTotal(
-                    label: 'expense'.tr,
-                    value: store.monthlyExpenseTotal,
-                    currency: currency,
-                    color: const Color(0xFFD64545))),
-            Expanded(
-                child: _BillTotal(
-                    label: 'income'.tr,
-                    value: store.monthlyIncomeTotal,
-                    currency: currency,
-                    color: const Color(0xFF248B5D))),
-            Expanded(
-                child: _BillTotal(
-                    label: 'monthNet'.tr,
-                    value: store.monthlyBillNet,
-                    currency: currency)),
+            Row(
+              children: [
+                Expanded(
+                    child: _BillTotal(
+                        label: 'expense'.tr,
+                        value: store.monthlyExpenseTotal,
+                        currency: currency,
+                        color: const Color(0xFFD64545))),
+                const SizedBox(width: 14),
+                Expanded(
+                    child: _BillTotal(
+                        label: 'income'.tr,
+                        value: store.monthlyIncomeTotal,
+                        currency: currency,
+                        color: const Color(0xFF248B5D))),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 1,
+              color: AppTheme.textSubtle(context).withValues(alpha: 0.10),
+            ),
+            const SizedBox(height: 12),
+            _BillTotal(
+              label: 'monthNet'.tr,
+              value: store.monthlyBillNet,
+              currency: currency,
+              large: true,
+              color: store.monthlyBillNet < 0
+                  ? const Color(0xFFD64545)
+                  : const Color(0xFF248B5D),
+            ),
           ],
         ),
       ),
@@ -371,32 +491,37 @@ class _BillTotal extends StatelessWidget {
       {required this.label,
       required this.value,
       required this.currency,
-      this.color});
+      this.color,
+      this.large = false});
 
   final String label;
   final double value;
   final String currency;
   final Color? color;
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style:
-                TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
-        const SizedBox(height: 6),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(money(value, currency),
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: color ?? AppTheme.textMain(context))),
-        ),
-      ],
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style:
+                  TextStyle(color: AppTheme.textSubtle(context), fontSize: 12)),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(money(value, currency),
+                style: TextStyle(
+                    fontSize: large ? 20 : 16,
+                    fontWeight: FontWeight.w900,
+                    color: color ?? AppTheme.textMain(context))),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -418,6 +543,8 @@ class _AssetsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _AssetSegmentedTabs(store: store),
+          const SizedBox(height: 12),
+          _AssetCategoryTotalCard(store: store, selected: selected),
           const SizedBox(height: 16),
           if (selected == 0)
             _AssetSection(
@@ -506,6 +633,187 @@ class _AssetSegmentedTabs extends StatelessWidget {
           );
         }),
       ),
+    );
+  }
+}
+
+
+class _AssetCategoryTotalCard extends StatelessWidget {
+  const _AssetCategoryTotalCard({required this.store, required this.selected});
+
+  final LedgerStore store;
+  final int selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = store.settings.defaultCurrency;
+
+    if (selected == 2) {
+      final receivable = store.receivableTotal ?? 0;
+      final payable = store.payableTotal ?? 0;
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _DebtTotalBox(
+                      label: 'receivable'.tr,
+                      value: money(receivable, currency),
+                      color: const Color(0xFF248B5D),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _DebtTotalBox(
+                      label: 'payable'.tr,
+                      value: money(payable, currency),
+                      color: const Color(0xFFD64545),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _DebtTotalBox(
+                label: 'debtNet'.tr,
+                value: money(receivable - payable, currency),
+                wide: true,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final isInvestment = selected == 1;
+    final title = isInvestment ? 'investmentTotal'.tr : 'fundsTotal'.tr;
+    final value = isInvestment ? store.investmentTotal : store.fundsTotal;
+    final icon = isInvestment ? Icons.show_chart_rounded : Icons.account_balance_wallet_rounded;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: AppTheme.textSubtle(context),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  money(value, currency),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DebtTotalBox extends StatelessWidget {
+  const _DebtTotalBox({
+    required this.label,
+    required this.value,
+    this.color,
+    this.wide = false,
+  });
+
+  final String label;
+  final String value;
+  final Color? color;
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = wide
+        ? Row(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: AppTheme.textSubtle(context),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: color ?? AppTheme.textMain(context),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppTheme.textSubtle(context),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    color: color ?? AppTheme.textMain(context),
+                  ),
+                ),
+              ),
+            ],
+          );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.055),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: content,
     );
   }
 }

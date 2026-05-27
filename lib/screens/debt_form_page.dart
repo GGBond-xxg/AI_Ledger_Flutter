@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -272,40 +273,74 @@ class _DebtImagePicker extends StatelessWidget {
   }
 }
 
-class _DebtImagePreview extends StatelessWidget {
+class _DebtImagePreview extends StatefulWidget {
   const _DebtImagePreview({required this.imageBase64, required this.onRemove});
 
   final String imageBase64;
   final VoidCallback? onRemove;
 
   @override
-  Widget build(BuildContext context) {
-    Widget image;
-    try {
-      image = Image.memory(base64Decode(imageBase64), width: 96, height: 72, fit: BoxFit.cover);
-    } catch (_) {
-      image = Container(
-        width: 96,
-        height: 72,
-        alignment: Alignment.center,
-        color: AppTheme.textSubtle(context).withValues(alpha: 0.08),
-        child: Icon(Icons.broken_image_rounded, color: AppTheme.textSubtle(context)),
-      );
+  State<_DebtImagePreview> createState() => _DebtImagePreviewState();
+}
+
+class _DebtImagePreviewState extends State<_DebtImagePreview> {
+  Uint8List? _bytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _decode();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DebtImagePreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageBase64 != widget.imageBase64) {
+      _decode();
     }
+  }
+
+  void _decode() {
+    try {
+      _bytes = base64Decode(widget.imageBase64);
+    } catch (_) {
+      _bytes = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = _bytes;
+    final image = bytes == null
+        ? Container(
+            width: 96,
+            height: 72,
+            alignment: Alignment.center,
+            color: AppTheme.textSubtle(context).withValues(alpha: 0.08),
+            child: Icon(Icons.broken_image_rounded, color: AppTheme.textSubtle(context)),
+          )
+        : Image.memory(
+            bytes,
+            width: 96,
+            height: 72,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            filterQuality: FilterQuality.low,
+          );
 
     return Stack(
       clipBehavior: Clip.none,
       children: [
         InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => _showDebtImagePreview(context, imageBase64),
+          onTap: () => _showDebtImagePreview(context, widget.imageBase64),
           child: ClipRRect(borderRadius: BorderRadius.circular(14), child: image),
         ),
         Positioned(
           top: -8,
           right: -8,
           child: InkWell(
-            onTap: onRemove,
+            onTap: widget.onRemove,
             borderRadius: BorderRadius.circular(99),
             child: Container(
               width: 26,
@@ -337,7 +372,7 @@ void _showDebtImagePreview(BuildContext context, String imageBase64) {
             InteractiveViewer(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(22),
-                child: Image.memory(bytes, fit: BoxFit.contain),
+                child: Image.memory(bytes, fit: BoxFit.contain, gaplessPlayback: true),
               ),
             ),
             Positioned(
