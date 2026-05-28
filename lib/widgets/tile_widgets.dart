@@ -98,6 +98,12 @@ class AssetTile extends StatelessWidget {
   }
 
   String _assetTitle(AssetItem item) {
+    if (item.type == 'cn_stock' || item.type == 'cn_etf') {
+      final name = item.name.trim();
+      if (name.isNotEmpty) return name;
+      final symbol = item.symbol.trim();
+      if (symbol.isNotEmpty) return symbol;
+    }
     if (item.isInvestment) {
       final symbol = item.symbol.trim();
       if (symbol.isNotEmpty) return symbol;
