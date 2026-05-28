@@ -34,6 +34,8 @@ class AssetTile extends StatelessWidget {
     final value = numFromPath(valuation, ['value']);
     final price = numFromPath(valuation, ['price']);
     final quoteCurrency = valuation?['quoteCurrency'] as String?;
+    final title = _assetTitle(item);
+    final subtitle = _assetSubtitle(item, price, quoteCurrency);
 
     return Dismissible(
       key: ValueKey(item.id),
@@ -55,27 +57,20 @@ class AssetTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.name,
+                      Text(title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               fontWeight: FontWeight.w800, fontSize: 16)),
-                      const SizedBox(height: 6),
-                      Text(_assetMeta(context, item),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(color: AppTheme.textSubtle(context))),
-                      if (price != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                            trUnitPrice(
-                                money(price, defaultCurrency), quoteCurrency),
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(subtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                                 color: AppTheme.textSubtle(context),
-                                fontSize: 12)),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
                       ],
                       if (item.note.trim().isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -102,18 +97,22 @@ class AssetTile extends StatelessWidget {
     );
   }
 
-  String _assetMeta(BuildContext context, AssetItem item) {
-    if (item.type == 'cash') {
-      return item.currency;
+  String _assetTitle(AssetItem item) {
+    if (item.isInvestment) {
+      final symbol = item.symbol.trim();
+      if (symbol.isNotEmpty) return symbol;
+    }
+    return item.name;
+  }
+
+  String _assetSubtitle(AssetItem item, num? price, String? quoteCurrency) {
+    if (price != null) {
+      return trUnitPrice(money(price, defaultCurrency), quoteCurrency);
     }
     if (item.type == 'manual') {
-      return '${trAssetType(item.type)} · ${item.currency}';
+      return trAssetType(item.type);
     }
-    final symbol = item.symbol.trim();
-    if (symbol.isNotEmpty) {
-      return symbol;
-    }
-    return trAssetType(item.type);
+    return '';
   }
 
   String _assetAmountSubtitle(BuildContext context, AssetItem item) {

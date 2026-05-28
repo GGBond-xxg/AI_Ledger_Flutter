@@ -575,11 +575,31 @@ class LedgerStore extends GetxController {
   Future<void> saveBillWithOptionalNewCashAsset(
     BillItem item, {
     AssetItem? newCashAsset,
+    AssetItem? newInvestmentAsset,
     bool updateExisting = false,
   }) async {
     if (newCashAsset != null && !assets.any((asset) => asset.id == newCashAsset.id)) {
       assets.insert(0, newCashAsset);
     }
+
+    if (newInvestmentAsset != null) {
+      final existingIndex = _findInvestmentMergeTargetIndex(newInvestmentAsset);
+      if (existingIndex >= 0) {
+        final target = assets[existingIndex];
+        _fillMissingInvestmentFields(target, newInvestmentAsset);
+        assets[existingIndex] = target;
+        item.investmentAssetId = target.id;
+        item.investmentAssetName = target.name;
+      } else if (!assets.any((asset) => asset.id == newInvestmentAsset.id)) {
+        // 新建买入理财时，持仓数量由账单流水增加；这里先放一个 0 持仓壳，
+        // 避免新增资产本身和买入账单重复加数量。
+        newInvestmentAsset.quantity = 0;
+        assets.insert(0, newInvestmentAsset);
+        item.investmentAssetId = newInvestmentAsset.id;
+        item.investmentAssetName = newInvestmentAsset.name;
+      }
+    }
+
     if (updateExisting) {
       await updateBill(item);
     } else {

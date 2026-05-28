@@ -103,7 +103,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
       final needsManualPrice = _type == 'manual';
       final needsCurrency = ['cash', 'manual'].contains(_type);
       final suggestions = _marketSuggestions();
-      final canLinkFund = !_isEditing && _formForInvestment && store.billLinkedAssets.isNotEmpty;
+      final canLinkFund = !_isEditing && _formForInvestment;
       final selectedFundAsset = _findAssetById(store.billLinkedAssets, _fundAssetId);
 
       return Scaffold(
@@ -262,6 +262,18 @@ class _AssetFormPageState extends State<AssetFormPage> {
                               return null;
                             },
                           ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            'investmentFundingRule'.tr,
+                            style: TextStyle(
+                              color: AppTheme.textSubtle(context),
+                              fontSize: 12,
+                              height: 1.4,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ],
                       LedgerTextField(
                           controller: _noteController,
@@ -440,7 +452,20 @@ class _AssetFormPageState extends State<AssetFormPage> {
     } else {
       final selectedFund = _findAssetById(store.billLinkedAssets, _fundAssetId);
       final fundAmount = double.tryParse(_fundAmountController.text.trim()) ?? 0;
-      if (item.isInvestment && selectedFund != null && fundAmount > 0) {
+      final shouldCreateFundingBill = item.isInvestment && _fundAssetId.trim().isNotEmpty;
+
+      // 新增理财时：
+      // 1. 资金来源选择“不选择资金来源” => 只新增/合并持仓，不生成账单记录。
+      // 2. 资金来源选择具体账户 => 必须填写扣款金额，并生成买入理财账单记录。
+      if (shouldCreateFundingBill) {
+        if (selectedFund == null) {
+          Get.snackbar('investment'.tr, 'selectFundAccount'.tr);
+          return;
+        }
+        if (fundAmount <= 0) {
+          Get.snackbar('investment'.tr, 'enterPositiveAmount'.tr);
+          return;
+        }
         saveFuture = store.addInvestmentWithFunding(
           investment: item,
           fundAssetId: selectedFund.id,
