@@ -16,6 +16,15 @@ import '../models/ledger_settings.dart';
 import '../models/market_option.dart';
 import 'quote_api_service.dart';
 
+class LedgerImportException implements Exception {
+  LedgerImportException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class LedgerStore extends GetxController {
   LedgerStore({required QuoteApiService apiService}) : _apiService = apiService;
 
@@ -353,27 +362,111 @@ class LedgerStore extends GetxController {
   }
 
   Future<void> importJson(String raw) async {
-    final data = jsonDecode(raw) as Map<String, dynamic>;
-    settings = LedgerSettings.fromJson((data['settings'] as Map?)?.cast<String, dynamic>() ?? {});
+    final data = _decodeBackupJson(raw);
+    final importedAssets = _listOfMaps(data['assets'])
+        .map(AssetItem.fromJson)
+        .toList(growable: true);
+    final importedDebts = _listOfMaps(data['debts'])
+        .map(DebtItem.fromJson)
+        .toList(growable: true);
+    final importedBills = _listOfMaps(data['bills'])
+        .map(BillItem.fromJson)
+        .toList(growable: true);
+
+    settings = LedgerSettings.fromJson(_mapOrEmpty(data['settings']));
     assets
       ..clear()
-      ..addAll(((data['assets'] as List?) ?? [])
-          .whereType<Map>()
-          .map((e) => AssetItem.fromJson(e.cast<String, dynamic>())));
+      ..addAll(importedAssets);
     debts
       ..clear()
-      ..addAll(((data['debts'] as List?) ?? [])
-          .whereType<Map>()
-          .map((e) => DebtItem.fromJson(e.cast<String, dynamic>())));
+      ..addAll(importedDebts);
     bills
       ..clear()
-      ..addAll(((data['bills'] as List?) ?? [])
-          .whereType<Map>()
-          .map((e) => BillItem.fromJson(e.cast<String, dynamic>())));
-    valuation = (data['valuation'] as Map?)?.cast<String, dynamic>();
+      ..addAll(importedBills);
+    valuation = _withoutTransientQuoteErrors(_nullableMap(data['valuation']));
+
+    final deduped = _dedupeInvestmentAssets();
+    final debtBillsMigrated = _ensureDebtBillsForExistingDebts();
     _touchBills();
+    if (deduped || debtBillsMigrated) {
+      _syncValuationAfterLocalChange();
+    }
+    _applyGetXRuntimeSettings();
     await save();
     update();
+  }
+
+  Map<String, dynamic> _decodeBackupJson(String raw) {
+    var text = raw.trim();
+    if (text.isEmpty) {
+      throw LedgerImportException('导入内容为空');
+    }
+    if (text.startsWith('﻿')) {
+      text = text.substring(1).trimLeft();
+    }
+
+    // 兼容从微信/Telegram/备忘录复制出来的 Markdown 代码块。
+    if (text.startsWith('```')) {
+      final firstLineEnd = text.indexOf('\n');
+      final lastFence = text.lastIndexOf('```');
+      if (firstLineEnd >= 0 && lastFence > firstLineEnd) {
+        text = text.substring(firstLineEnd + 1, lastFence).trim();
+      }
+    }
+
+    // 兼容前后带说明文字的情况：只截取最外层 JSON 对象。
+    final start = text.indexOf('{');
+    final end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) {
+      throw LedgerImportException('没有找到完整 JSON 对象，请选择 .json/.txt 文件，或复制完整备份内容');
+    }
+    if (start > 0 || end < text.length - 1) {
+      text = text.substring(start, end + 1);
+    }
+
+    Object? decoded;
+    try {
+      decoded = jsonDecode(text);
+    } on FormatException catch (e) {
+      final tailLooksCut = !text.trimRight().endsWith('}');
+      throw LedgerImportException(tailLooksCut
+          ? 'JSON 内容不完整，可能在跨手机复制/转发时被截断了'
+          : 'JSON 格式不正确：${e.message}');
+    }
+
+    if (decoded is! Map) {
+      throw LedgerImportException('备份根节点不是 JSON 对象');
+    }
+    final data = _stringKeyMap(decoded);
+    final hasKnownKey = data.containsKey('settings') ||
+        data.containsKey('assets') ||
+        data.containsKey('debts') ||
+        data.containsKey('bills');
+    if (!hasKnownKey) {
+      throw LedgerImportException('不是本应用导出的备份文件');
+    }
+    return data;
+  }
+
+  Map<String, dynamic> _stringKeyMap(Map source) {
+    final result = <String, dynamic>{};
+    source.forEach((key, value) {
+      if (key is String) result[key] = value;
+    });
+    return result;
+  }
+
+  Map<String, dynamic> _mapOrEmpty(dynamic value) {
+    return value is Map ? _stringKeyMap(value) : <String, dynamic>{};
+  }
+
+  Map<String, dynamic>? _nullableMap(dynamic value) {
+    return value is Map ? _stringKeyMap(value) : null;
+  }
+
+  List<Map<String, dynamic>> _listOfMaps(dynamic value) {
+    if (value is! List) return <Map<String, dynamic>>[];
+    return value.whereType<Map>().map(_stringKeyMap).toList(growable: true);
   }
 
   Future<void> updateSettings(LedgerSettings newSettings) async {
