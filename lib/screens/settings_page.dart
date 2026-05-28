@@ -27,6 +27,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late String _currency;
   late String _themeMode;
   late String _languageMode;
+  late bool _useDynamicColors;
   bool _testing = false;
   final RxInt _uiVersion = 0.obs;
 
@@ -40,6 +41,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _currency = store.settings.defaultCurrency;
     _themeMode = store.settings.themeMode;
     _languageMode = store.settings.languageMode;
+    _useDynamicColors = store.settings.useDynamicColors;
   }
 
   @override
@@ -82,6 +84,13 @@ class _SettingsPageState extends State<SettingsPage> {
                       DropdownMenuItem(value: 'en', child: Text('english'.tr)),
                     ],
                     onChanged: (value) { _languageMode = value ?? _languageMode; _refreshUi(); },
+                  ),
+                  _SwitchRow(
+                    icon: Icons.palette_rounded,
+                    title: 'useDynamicColors'.tr,
+                    subtitle: 'useDynamicColorsDesc'.tr,
+                    value: _useDynamicColors,
+                    onChanged: (value) { _useDynamicColors = value; _refreshUi(); },
                   ),
                   LedgerDropdownField<String>(
                     label: 'defaultCurrency'.tr,
@@ -191,6 +200,7 @@ class _SettingsPageState extends State<SettingsPage> {
       defaultCurrency: _currency,
       themeMode: _themeMode,
       languageMode: _languageMode,
+      useDynamicColors: _useDynamicColors,
     );
     await store.updateSettings(settings);
     if (mounted && showToast) _toast('settingsSaved'.tr);
@@ -521,6 +531,47 @@ class _SecurityOptionTile extends StatelessWidget {
             if (selected) Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 3),
+                Text(subtitle, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13, height: 1.35)),
+              ],
+            ),
+          ),
+          Switch(value: value, onChanged: onChanged),
+        ],
       ),
     );
   }

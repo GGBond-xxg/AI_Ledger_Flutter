@@ -18,6 +18,7 @@ import 'bill_form_page.dart';
 import 'debt_detail_page.dart';
 import 'debt_form_page.dart';
 import 'exchange_form_page.dart';
+import 'investment_trade_form_page.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -64,7 +65,7 @@ class _HomePageState extends State<HomePage> {
             if (assetTab == 0) {
               _openFundActions();
             } else if (assetTab == 1) {
-              _openAssetForm(true);
+              _openInvestmentActions();
             } else {
               _openDebtForm();
             }
@@ -192,6 +193,66 @@ class _HomePageState extends State<HomePage> {
                 onTap: () {
                   Get.back<void>();
                   Get.to<void>(() => const ExchangeFormPage());
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+
+  void _openInvestmentActions() {
+    Get.bottomSheet<void>(
+      SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+          decoration: BoxDecoration(
+            color: AppTheme.cardColor(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppTheme.textSubtle(context).withValues(alpha: 0.28),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _FundActionTile(
+                icon: Icons.add_chart_rounded,
+                title: 'addInvestment'.tr,
+                subtitle: 'addInvestmentActionSubtitle'.tr,
+                onTap: () {
+                  Get.back<void>();
+                  _openAssetForm(true);
+                },
+              ),
+              const SizedBox(height: 10),
+              _FundActionTile(
+                icon: Icons.trending_up_rounded,
+                title: 'buyInvestment'.tr,
+                subtitle: 'buyInvestmentActionSubtitle'.tr,
+                onTap: () {
+                  Get.back<void>();
+                  Get.to<void>(() => const InvestmentTradeFormPage(defaultSell: false));
+                },
+              ),
+              const SizedBox(height: 10),
+              _FundActionTile(
+                icon: Icons.sell_rounded,
+                title: 'sellInvestment'.tr,
+                subtitle: 'sellInvestmentActionSubtitle'.tr,
+                onTap: () {
+                  Get.back<void>();
+                  Get.to<void>(() => const InvestmentTradeFormPage(defaultSell: true));
                 },
               ),
             ],
@@ -375,9 +436,17 @@ class _BillsPage extends StatelessWidget {
                   child: BillTile(
                     item: item,
                     onDelete: () => store.removeBill(item.id),
-                    onEdit: () => item.isExchangeBill
-                        ? Get.to<void>(() => ExchangeFormPage(existing: item))
-                        : Get.to<void>(() => BillFormPage(existing: item)),
+                    onEdit: () {
+                      if (item.isExchangeBill) {
+                        Get.to<void>(() => ExchangeFormPage(existing: item));
+                      } else if (item.isInvestmentBill) {
+                        Get.to<void>(() => InvestmentTradeFormPage(existing: item));
+                      } else if (item.isDebtBill && item.debtId.trim().isNotEmpty) {
+                        Get.to<void>(() => DebtDetailPage(debtId: item.debtId));
+                      } else {
+                        Get.to<void>(() => BillFormPage(existing: item));
+                      }
+                    },
                   ),
                 )),
         ],

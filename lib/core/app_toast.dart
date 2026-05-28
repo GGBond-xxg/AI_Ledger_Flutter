@@ -13,8 +13,12 @@ void showAppToast(
   final context = Get.context;
   final isDark = context == null ? Get.isDarkMode : AppTheme.isDark(context);
   final backgroundColor = isDark ? const Color(0xFF1F2937) : Colors.white;
-  final titleColor = isDark ? AppTheme.darkTextMain : AppTheme.lightTextMain;
-  final messageColor = isDark ? AppTheme.darkTextSubtle : AppTheme.lightTextSubtle;
+  final titleColor = context == null
+      ? (isDark ? Colors.white : const Color(0xFF111827))
+      : AppTheme.textMain(context);
+  final messageColor = context == null
+      ? (isDark ? const Color(0xFFD1D5DB) : const Color(0xFF6B7280))
+      : AppTheme.textSubtle(context);
   final primaryColor = context == null ? AppTheme.primary : Theme.of(context).colorScheme.primary;
 
   Get.snackbar(

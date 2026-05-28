@@ -62,14 +62,7 @@ class EmptyCard extends StatelessWidget {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      primary.withValues(alpha: 0.18),
-                      primary.withValues(alpha: 0.07),
-                    ],
-                  ),
+                  color: primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(26),
                 ),
                 child: Icon(icon, color: primary, size: 34),
@@ -107,9 +100,7 @@ class EmptyCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: primary,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(color: primary.withValues(alpha: 0.22), blurRadius: 16, offset: const Offset(0, 8)),
-                  ],
+
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

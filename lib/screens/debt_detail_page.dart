@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../app/app_theme.dart';
 import '../core/app_toast.dart';
+import '../core/id.dart';
 import '../core/formatters.dart';
 import '../l10n/translation_service.dart';
 import '../models/asset_item.dart';
@@ -26,6 +27,9 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
+  final _newAssetNameController = TextEditingController();
+
+  static const _newAssetValue = '__new_debt_fund_asset__';
 
   String _assetId = '';
   bool _submitting = false;
@@ -34,6 +38,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _newAssetNameController.dispose();
     super.dispose();
   }
 
@@ -73,8 +78,6 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                 const SizedBox(height: 14),
                 if (debt.isSettled)
                   const _SettledNotice()
-                else if (fundAssets.isEmpty)
-                  _NoFundAccountCard(currency: debt.currency)
                 else
                   Form(
                     key: _formKey,
@@ -85,14 +88,29 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                         LedgerDropdownField<String>(
                           label: 'fundAccount'.tr,
                           value: currentAssetId,
-                          items: fundAssets
-                              .map((asset) => DropdownMenuItem<String>(
-                                    value: asset.id,
-                                    child: Text(_fundAssetLabel(asset)),
-                                  ))
-                              .toList(growable: false),
-                          onChanged: (value) => setState(() => _assetId = value ?? _assetId),
+                          items: [
+                            ...fundAssets.map((asset) => DropdownMenuItem<String>(
+                                  value: asset.id,
+                                  child: Text(_fundAssetLabel(asset)),
+                                )),
+                            DropdownMenuItem<String>(value: _newAssetValue, child: Text('createNewFundAccount'.tr)),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _assetId = value ?? _assetId;
+                              if (_assetId == _newAssetValue && _newAssetNameController.text.trim().isEmpty) {
+                                _newAssetNameController.text = 'fundAccount'.tr;
+                              }
+                            });
+                          },
                         ),
+                        if (currentAssetId == _newAssetValue)
+                          LedgerTextField(
+                            controller: _newAssetNameController,
+                            label: 'newFundAccountName'.tr,
+                            hint: 'newFundAccountNameHint'.tr,
+                            validator: (value) => value == null || value.trim().isEmpty ? 'enterName'.tr : null,
+                          ),
                         LedgerTextField(
                           controller: _amountController,
                           label: debt.isPayable ? 'repayAmount'.tr : 'collectAmount'.tr,
@@ -164,7 +182,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
   }
 
   String _validAssetId(List<AssetItem> assets) {
-    if (assets.isEmpty) return '';
+    if (_assetId == _newAssetValue || assets.isEmpty) return _newAssetValue;
     if (_assetId.trim().isNotEmpty && assets.any((item) => item.id == _assetId)) {
       return _assetId;
     }
@@ -179,11 +197,23 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
     if (!_formKey.currentState!.validate()) return;
     final amount = double.parse(_amountController.text.trim());
 
+    final creatingAsset = assetId == _newAssetValue;
+    final AssetItem? newAsset = creatingAsset
+        ? AssetItem(
+            id: newId(),
+            name: _newAssetNameController.text.trim(),
+            type: 'cash',
+            quantity: 0,
+            currency: debt.currency,
+          )
+        : null;
+
     setState(() => _submitting = true);
-    await store.settleDebt(
+    await store.settleDebtWithOptionalNewCashAsset(
       debtId: debt.id,
-      assetId: assetId,
+      assetId: newAsset?.id ?? assetId,
       amount: amount,
+      newCashAsset: newAsset,
       note: _noteController.text.trim(),
     );
     await store.refreshValuation(force: true, source: 'debtSettlement');
@@ -381,37 +411,6 @@ class _SettledNotice extends StatelessWidget {
           const Icon(Icons.check_circle_rounded, color: Color(0xFF248B5D)),
           const SizedBox(width: 10),
           Expanded(child: Text('debtSettledTip'.tr, style: const TextStyle(color: Color(0xFF248B5D), fontWeight: FontWeight.w800))),
-        ],
-      ),
-    );
-  }
-}
-
-class _NoFundAccountCard extends StatelessWidget {
-  const _NoFundAccountCard({required this.currency});
-
-  final String currency;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor(context),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline_rounded, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'noDebtFundAccountDesc'.trParams({'currency': currency}),
-              style: TextStyle(color: AppTheme.textSubtle(context), height: 1.5, fontWeight: FontWeight.w700),
-            ),
-          ),
         ],
       ),
     );

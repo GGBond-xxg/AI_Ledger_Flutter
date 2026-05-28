@@ -101,10 +101,10 @@ class AssetTile extends StatelessWidget {
 
   String _assetMeta(BuildContext context, AssetItem item) {
     if (item.type == 'cash') {
-      return '${item.currency} · ${trimNum(item.quantity)}';
+      return item.currency;
     }
     if (item.type == 'manual') {
-      return '${item.currency} · ${trimNum(item.quantity)} × ${trimNum(item.manualPrice)}';
+      return '${trAssetType(item.type)} · ${item.currency}';
     }
     if (item.type == 'metal') {
       return '${item.symbol} · ${trimNum(item.quantity)} ${trMetalUnit(item.unit.isEmpty ? 'gram' : item.unit)}';
@@ -420,6 +420,9 @@ class BillTile extends StatelessWidget {
     if (item.isInvestmentBill) {
       return _buildInvestmentBill(context);
     }
+    if (item.isDebtBill) {
+      return _buildDebtBill(context);
+    }
 
     final color =
         item.isIncome ? const Color(0xFF248B5D) : const Color(0xFFD64545);
@@ -480,6 +483,91 @@ class BillTile extends StatelessWidget {
                       '${item.isIncome ? '+' : '-'}${money(item.amount, item.currency)}',
                   color: color,
                 ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildDebtBill(BuildContext context) {
+    final debtName = item.debtName.trim().isEmpty ? 'debt'.tr : item.debtName.trim();
+    final fundName = item.assetName.trim().isEmpty ? 'fundAccount'.tr : item.assetName.trim();
+
+    if (item.category == 'debtRepayment') {
+      return _FlowBillCard(
+        item: item,
+        deleteTitle: '${'repayment'.tr} · $debtName',
+        icon: Icons.payments_rounded,
+        leftLabel: fundName,
+        leftValue: '-${money(item.amount, item.currency)}',
+        leftColor: const Color(0xFFD64545),
+        rightLabel: debtName,
+        rightValue: '-${money(item.amount, item.currency)}',
+        rightColor: const Color(0xFF248B5D),
+        onTap: onEdit,
+        onDelete: onDelete,
+      );
+    }
+
+    if (item.category == 'debtCollection') {
+      return _FlowBillCard(
+        item: item,
+        deleteTitle: '${'collection'.tr} · $debtName',
+        icon: Icons.call_received_rounded,
+        leftLabel: debtName,
+        leftValue: '-${money(item.amount, item.currency)}',
+        leftColor: const Color(0xFFD64545),
+        rightLabel: fundName,
+        rightValue: '+${money(item.amount, item.currency)}',
+        rightColor: const Color(0xFF248B5D),
+        onTap: onEdit,
+        onDelete: onDelete,
+      );
+    }
+
+    final isReceivable = item.category == 'debtReceivable' || item.debtDirection == 'receivable';
+    final color = isReceivable ? const Color(0xFF248B5D) : const Color(0xFFD64545);
+    final icon = isReceivable ? Icons.call_received_rounded : Icons.call_made_rounded;
+    final title = trBillCategory(item.category);
+    return Dismissible(
+      key: ValueKey(item.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async => await _confirmDelete(context, '$title · $debtName'),
+      onDismissed: (_) => onDelete(),
+      background: const _DeleteBackground(),
+      child: Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onEdit,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(icon, color: color),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                      const SizedBox(height: 6),
+                      Text(debtName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: AppTheme.textSubtle(context))),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _AmountText(value: money(item.amount, item.currency), color: color),
               ],
             ),
           ),

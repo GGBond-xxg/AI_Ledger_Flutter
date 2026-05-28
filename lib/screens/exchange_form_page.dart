@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../core/app_constants.dart';
 import '../core/formatters.dart';
 import '../core/id.dart';
 import '../models/asset_item.dart';
@@ -26,9 +27,13 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
   final _fromAmountController = TextEditingController();
   final _toAmountController = TextEditingController();
   final _noteController = TextEditingController();
+  final _newToNameController = TextEditingController();
+
+  static const _newToAssetValue = '__new_to_asset__';
 
   String _fromAssetId = '';
   String _toAssetId = '';
+  String _newToCurrency = 'USD';
   DateTime _occurredAt = DateTime.now();
   final RxInt _uiVersion = 0.obs;
 
@@ -45,6 +50,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       _fromAmountController.text = trimNum(existing.amount);
       _toAmountController.text = trimNum(existing.toAmount);
       _noteController.text = existing.note;
+      _newToCurrency = existing.toCurrency.trim().isEmpty ? 'USD' : existing.toCurrency;
       _occurredAt = existing.occurredAt;
     }
   }
@@ -54,6 +60,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
     _fromAmountController.dispose();
     _toAmountController.dispose();
     _noteController.dispose();
+    _newToNameController.dispose();
     super.dispose();
   }
 
@@ -67,7 +74,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       if (_fromAssetId.isNotEmpty && fromAsset == null) {
         _fromAssetId = '';
       }
-      if (_toAssetId.isNotEmpty && toAsset == null) {
+      if (_toAssetId.isNotEmpty && _toAssetId != _newToAssetValue && toAsset == null) {
         _toAssetId = '';
       }
 
@@ -114,16 +121,38 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
                                 value: asset.id,
                                 child: Text('${asset.name} · ${trimNum(asset.quantity)} ${asset.currency}'),
                               )),
+                          DropdownMenuItem(value: _newToAssetValue, child: Text('createNewFundAccount'.tr)),
                         ],
                         onChanged: (value) {
                           _toAssetId = value ?? '';
+                          final from = _findAssetById(fundAssets, _fromAssetId);
+                          if (_toAssetId == _newToAssetValue && _newToNameController.text.trim().isEmpty) {
+                            _newToNameController.text = from == null ? '' : from.name;
+                          }
                           _refreshUi();
                         },
                       ),
-                      if (toAsset != null)
+                      if (_toAssetId == _newToAssetValue) ...[
+                        LedgerTextField(
+                          controller: _newToNameController,
+                          label: 'newFundAccountName'.tr,
+                          hint: 'newFundAccountNameHint'.tr,
+                          validator: (value) => value == null || value.trim().isEmpty ? 'enterName'.tr : null,
+                        ),
+                        LedgerDropdownField<String>(
+                          label: 'newFundAccountCurrency'.tr,
+                          value: _newToCurrency,
+                          items: kCurrencies.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                          onChanged: (value) {
+                            _newToCurrency = value ?? _newToCurrency;
+                            _refreshUi();
+                          },
+                        ),
+                      ],
+                      if (toAsset != null || _toAssetId == _newToAssetValue)
                         LedgerTextField(
                           controller: _toAmountController,
-                          label: 'toAmount'.trParams({'currency': toAsset.currency}),
+                          label: 'toAmount'.trParams({'currency': toAsset?.currency ?? _newToCurrency}),
                           hint: 'amountHint'.tr,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           validator: _positiveAmountValidator,
@@ -178,16 +207,30 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
   Future<void> _submit() async {
     final fundAssets = store.billLinkedAssets;
     final fromAsset = _findAssetById(fundAssets, _fromAssetId);
-    final toAsset = _findAssetById(fundAssets, _toAssetId);
-    if (fromAsset == null || toAsset == null) {
+    final existingToAsset = _findAssetById(fundAssets, _toAssetId);
+    final creatingToAsset = _toAssetId == _newToAssetValue;
+    if (fromAsset == null || (!creatingToAsset && existingToAsset == null)) {
       Get.snackbar('exchangeBill'.tr, 'selectExchangeAccounts'.tr);
       return;
     }
-    if (fromAsset.id == toAsset.id) {
+    if (!creatingToAsset && fromAsset.id == existingToAsset!.id) {
       Get.snackbar('exchangeBill'.tr, 'exchangeAccountMustDifferent'.tr);
       return;
     }
     if (!_formKey.currentState!.validate()) return;
+
+    final AssetItem? newToAsset = creatingToAsset
+        ? AssetItem(
+            id: newId(),
+            name: _newToNameController.text.trim(),
+            type: 'cash',
+            quantity: 0,
+            currency: _newToCurrency,
+          )
+        : null;
+    final toAssetId = newToAsset?.id ?? existingToAsset!.id;
+    final toAssetName = newToAsset?.name ?? existingToAsset!.name;
+    final toCurrency = newToAsset?.currency ?? existingToAsset!.currency;
 
     final item = BillItem(
       id: widget.existing?.id ?? newId(),
@@ -197,17 +240,20 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       currency: fromAsset.currency,
       assetId: fromAsset.id,
       assetName: fromAsset.name,
-      toAssetId: toAsset.id,
-      toAssetName: toAsset.name,
+      toAssetId: toAssetId,
+      toAssetName: toAssetName,
       toAmount: double.parse(_toAmountController.text.trim()),
-      toCurrency: toAsset.currency,
+      toCurrency: toCurrency,
       note: _noteController.text.trim(),
       occurredAt: _occurredAt,
       createdAt: widget.existing?.createdAt,
     );
 
-    final Future<void> saveFuture =
-        _isEditing ? store.updateBill(item) : store.addBill(item);
+    final Future<void> saveFuture = store.saveBillWithOptionalNewCashAsset(
+      item,
+      newCashAsset: newToAsset,
+      updateExisting: _isEditing,
+    );
     if (mounted) Get.back<void>();
     unawaited(saveFuture.catchError((_) {}));
     unawaited(store.refreshValuation(force: true, source: 'exchangeSaved'));

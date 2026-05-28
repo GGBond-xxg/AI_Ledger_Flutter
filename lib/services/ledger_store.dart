@@ -117,8 +117,9 @@ class LedgerStore extends GetxController {
             .map((e) => BillItem.fromJson(e.cast<String, dynamic>())));
       valuation = _withoutTransientQuoteErrors((data['valuation'] as Map?)?.cast<String, dynamic>());
       final deduped = _dedupeInvestmentAssets();
+      final debtBillsMigrated = _ensureDebtBillsForExistingDebts();
       _touchBills();
-      if (deduped) {
+      if (deduped || debtBillsMigrated) {
         _syncValuationAfterLocalChange();
         await save();
       }
@@ -425,6 +426,74 @@ class LedgerStore extends GetxController {
     billsVersion.value++;
   }
 
+
+  bool _ensureDebtBillsForExistingDebts() {
+    var changed = false;
+    for (final debt in debts) {
+      if (!bills.any((bill) => bill.isDebtCreation && bill.debtId == debt.id)) {
+        bills.add(
+          BillItem(
+            id: newId(),
+            type: 'debt',
+            category: debt.isPayable ? 'debtPayable' : 'debtReceivable',
+            amount: debt.originalAmount,
+            currency: debt.currency,
+            debtId: debt.id,
+            debtName: debt.name,
+            debtDirection: debt.direction,
+            note: debt.note,
+            occurredAt: debt.createdAt,
+          ),
+        );
+        changed = true;
+      }
+
+      for (final transaction in debt.transactions) {
+        if (bills.any((bill) => bill.isDebtSettlement && bill.debtTransactionId == transaction.id)) {
+          continue;
+        }
+        bills.add(
+          BillItem(
+            id: newId(),
+            type: 'debt',
+            category: transaction.isRepayment ? 'debtRepayment' : 'debtCollection',
+            amount: transaction.amount,
+            currency: transaction.currency,
+            assetId: transaction.assetId,
+            assetName: transaction.assetName,
+            debtId: debt.id,
+            debtName: debt.name,
+            debtDirection: debt.direction,
+            debtTransactionId: transaction.id,
+            note: transaction.note,
+            occurredAt: transaction.occurredAt,
+          ),
+        );
+        changed = true;
+      }
+    }
+    if (changed) {
+      bills.sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    }
+    return changed;
+  }
+
+
+  Future<void> saveBillWithOptionalNewCashAsset(
+    BillItem item, {
+    AssetItem? newCashAsset,
+    bool updateExisting = false,
+  }) async {
+    if (newCashAsset != null && !assets.any((asset) => asset.id == newCashAsset.id)) {
+      assets.insert(0, newCashAsset);
+    }
+    if (updateExisting) {
+      await updateBill(item);
+    } else {
+      await addBill(item);
+    }
+  }
+
   Future<void> addBill(BillItem item) async {
     bills.insert(0, item);
     _applyBillAssetEffect(item);
@@ -471,8 +540,111 @@ class LedgerStore extends GetxController {
       _applyBillExchangeEffect(item, reverse: reverse);
       return;
     }
+    if (item.isDebtBill) {
+      _applyBillDebtEffect(item, reverse: reverse);
+      return;
+    }
     _applyBillFundEffect(item, reverse: reverse);
     _applyBillInvestmentEffect(item, reverse: reverse);
+  }
+
+
+  void _applyBillDebtEffect(BillItem item, {bool reverse = false}) {
+    final category = item.category;
+    if (category == 'debtPayable' || category == 'debtReceivable') {
+      if (reverse) {
+        final debtId = item.debtId.trim();
+        if (debtId.isNotEmpty) {
+          final linkedSettlements = bills
+              .where((bill) => bill.isDebtSettlement && bill.debtId == debtId)
+              .toList(growable: false);
+          for (final bill in linkedSettlements) {
+            _applyBillDebtEffect(bill, reverse: true);
+          }
+          bills.removeWhere((bill) => bill.isDebtBill && bill.debtId == debtId);
+          debts.removeWhere((debt) => debt.id == debtId);
+        }
+      } else {
+        final debtId = item.debtId.trim().isEmpty ? newId() : item.debtId.trim();
+        if (debts.any((debt) => debt.id == debtId)) return;
+        final direction = category == 'debtReceivable' ? 'receivable' : 'payable';
+        debts.insert(
+          0,
+          DebtItem(
+            id: debtId,
+            name: item.debtName.trim().isEmpty ? item.category : item.debtName.trim(),
+            direction: direction,
+            amount: item.amount,
+            currency: item.currency,
+            note: item.note,
+            createdAt: item.occurredAt,
+          ),
+        );
+        item.debtId = debtId;
+        item.debtDirection = direction;
+      }
+      return;
+    }
+
+    if (category != 'debtRepayment' && category != 'debtCollection') {
+      return;
+    }
+
+    final debtIndex = debts.indexWhere((debt) => debt.id == item.debtId);
+    if (debtIndex < 0 || item.amount <= 0) return;
+
+    final debt = debts[debtIndex];
+    final assetIndex = assets.indexWhere((asset) =>
+        asset.id == item.assetId &&
+        asset.type == 'cash' &&
+        asset.currency.toUpperCase() == item.currency.toUpperCase());
+
+    final isRepayment = category == 'debtRepayment';
+    if (reverse) {
+      debt.amount += item.amount;
+      final transactionId = item.debtTransactionId.trim();
+      if (transactionId.isNotEmpty) {
+        debt.transactions.removeWhere((transaction) => transaction.id == transactionId);
+      }
+      if (assetIndex >= 0) {
+        final asset = assets[assetIndex];
+        asset.quantity += isRepayment ? item.amount : -item.amount;
+        if (asset.quantity.abs() < 0.000000001) asset.quantity = 0;
+        assets[assetIndex] = asset;
+      }
+    } else {
+      if (debt.amount <= 0) return;
+      final amount = item.amount > debt.amount ? debt.amount : item.amount;
+      final transactionId = item.debtTransactionId.trim().isEmpty ? newId() : item.debtTransactionId.trim();
+      if (!debt.transactions.any((transaction) => transaction.id == transactionId)) {
+        debt.transactions.insert(
+          0,
+          DebtTransaction(
+            id: transactionId,
+            type: isRepayment ? 'repayment' : 'collection',
+            amount: amount,
+            currency: item.currency,
+            assetId: item.assetId,
+            assetName: item.assetName,
+            note: item.note,
+            occurredAt: item.occurredAt,
+          ),
+        );
+      }
+      debt.amount -= amount;
+      if (debt.amount.abs() < 0.000000001) debt.amount = 0;
+      item.amount = amount;
+      item.debtTransactionId = transactionId;
+      if (assetIndex >= 0) {
+        final asset = assets[assetIndex];
+        asset.quantity += isRepayment ? -amount : amount;
+        if (asset.quantity.abs() < 0.000000001) asset.quantity = 0;
+        assets[assetIndex] = asset;
+      }
+    }
+
+    if (debt.amount.abs() < 0.000000001) debt.amount = 0;
+    debts[debtIndex] = debt;
   }
 
   void _applyBillExchangeEffect(BillItem item, {bool reverse = false}) {
@@ -1020,6 +1192,21 @@ class LedgerStore extends GetxController {
 
   Future<void> addDebt(DebtItem item) async {
     debts.insert(0, item);
+    final bill = BillItem(
+      id: newId(),
+      type: 'debt',
+      category: item.isPayable ? 'debtPayable' : 'debtReceivable',
+      amount: item.amount,
+      currency: item.currency,
+      debtId: item.id,
+      debtName: item.name,
+      debtDirection: item.direction,
+      note: item.note,
+      occurredAt: item.createdAt,
+    );
+    bills.insert(0, bill);
+    selectedBillMonth.value = DateTime(bill.occurredAt.year, bill.occurredAt.month);
+    _touchBills();
     _syncValuationAfterLocalChange();
     await save();
     update();
@@ -1032,13 +1219,34 @@ class LedgerStore extends GetxController {
     } else {
       debts.insert(0, item);
     }
+    for (final bill in bills) {
+      if (bill.debtId == item.id) {
+        bill.debtName = item.name;
+        bill.debtDirection = item.direction;
+        if (bill.isDebtCreation) {
+          bill.amount = item.originalAmount;
+          bill.currency = item.currency;
+          bill.category = item.isPayable ? 'debtPayable' : 'debtReceivable';
+          bill.note = item.note;
+        }
+      }
+    }
+    _touchBills();
     _syncValuationAfterLocalChange();
     await save();
     update();
   }
 
   Future<void> removeDebt(String id) async {
+    final linkedSettlements = bills
+        .where((bill) => bill.isDebtSettlement && bill.debtId == id)
+        .toList(growable: false);
+    for (final bill in linkedSettlements) {
+      _applyBillDebtEffect(bill, reverse: true);
+    }
     debts.removeWhere((e) => e.id == id);
+    bills.removeWhere((bill) => bill.isDebtBill && bill.debtId == id);
+    _touchBills();
     _syncValuationAfterLocalChange();
     await save();
     update();
@@ -1050,6 +1258,20 @@ class LedgerStore extends GetxController {
         .where((item) =>
             item.type == 'cash' && item.currency.toUpperCase() == normalizedCurrency)
         .toList(growable: false);
+  }
+
+
+  Future<void> settleDebtWithOptionalNewCashAsset({
+    required String debtId,
+    required String assetId,
+    required double amount,
+    AssetItem? newCashAsset,
+    String note = '',
+  }) async {
+    if (newCashAsset != null && !assets.any((asset) => asset.id == newCashAsset.id)) {
+      assets.insert(0, newCashAsset);
+    }
+    await settleDebt(debtId: debtId, assetId: assetId, amount: amount, note: note);
   }
 
   Future<void> settleDebt({
@@ -1101,6 +1323,25 @@ class LedgerStore extends GetxController {
     }
     debt.transactions.insert(0, transaction);
 
+    final bill = BillItem(
+      id: newId(),
+      type: 'debt',
+      category: debt.isPayable ? 'debtRepayment' : 'debtCollection',
+      amount: settledAmount,
+      currency: debt.currency,
+      assetId: asset.id,
+      assetName: asset.name,
+      debtId: debt.id,
+      debtName: debt.name,
+      debtDirection: debt.direction,
+      debtTransactionId: transaction.id,
+      note: note.trim(),
+      occurredAt: transaction.occurredAt,
+    );
+    bills.insert(0, bill);
+    selectedBillMonth.value = DateTime(bill.occurredAt.year, bill.occurredAt.month);
+    _touchBills();
+
     assets[assetIndex] = asset;
     debts[debtIndex] = debt;
     _syncValuationAfterLocalChange();
@@ -1112,6 +1353,16 @@ class LedgerStore extends GetxController {
     required String debtId,
     required String transactionId,
   }) async {
+    final linkedBillIndex = bills.indexWhere((bill) =>
+        bill.isDebtBill &&
+        bill.debtId == debtId &&
+        bill.debtTransactionId == transactionId);
+    if (linkedBillIndex >= 0) {
+      await removeBill(bills[linkedBillIndex].id);
+      return;
+    }
+
+    // Legacy fallback for transactions saved before bill records existed.
     final debtIndex = debts.indexWhere((item) => item.id == debtId);
     if (debtIndex < 0) return;
 

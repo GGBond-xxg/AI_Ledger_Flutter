@@ -3,79 +3,61 @@ import 'package:flutter/material.dart';
 class AppTheme {
   static const primary = Color(0xFF4D5F91);
 
-  static const lightBackground = Colors.white;
-  static const lightCard = Color(0xFFF8FAFC);
-  static const lightTextMain = Color(0xFF111827);
-  static const lightTextSubtle = Color(0xFF7A8192);
+  // Legacy text colors kept for older helpers that still read AppTheme directly.
+  // The main UI now uses Material 3 ColorScheme through textMain/textSubtle.
+  static const lightTextMain = Color(0xFF101828);
+  static const lightTextSubtle = Color(0xFF667085);
+  static const darkTextMain = Color(0xFFF8FAFC);
+  static const darkTextSubtle = Color(0xFFCBD5E1);
 
-  static const darkBackground = Color(0xFF11151D);
-  static const darkCard = Color(0xFF1B202A);
-  static const darkInput = Color(0xFF252B36);
-  static const darkTextMain = Color(0xFFF7F8FC);
-  static const darkTextSubtle = Color(0xFFA7B0C2);
-
-  static ThemeData light() {
-    return _base(
-      brightness: Brightness.light,
-      scaffoldBackground: lightBackground,
-      cardColor: lightCard,
-      inputFill: const Color(0xFFF3F5F8),
-      textMain: lightTextMain,
-      textSubtle: lightTextSubtle,
-    );
+  static ThemeData light({ColorScheme? dynamicScheme}) {
+    return _base(dynamicScheme ?? ColorScheme.fromSeed(seedColor: primary, brightness: Brightness.light));
   }
 
-  static ThemeData dark() {
-    return _base(
-      brightness: Brightness.dark,
-      scaffoldBackground: darkBackground,
-      cardColor: darkCard,
-      inputFill: darkInput,
-      textMain: darkTextMain,
-      textSubtle: darkTextSubtle,
-    );
+  static ThemeData dark({ColorScheme? dynamicScheme}) {
+    return _base(dynamicScheme ?? ColorScheme.fromSeed(seedColor: primary, brightness: Brightness.dark));
   }
 
-  static ThemeData _base({
-    required Brightness brightness,
-    required Color scaffoldBackground,
-    required Color cardColor,
-    required Color inputFill,
-    required Color textMain,
-    required Color textSubtle,
-  }) {
-    final colorScheme = ColorScheme.fromSeed(seedColor: primary, brightness: brightness);
+  static ThemeData _base(ColorScheme colorScheme) {
+    final brightness = colorScheme.brightness;
+    final isDarkMode = brightness == Brightness.dark;
+    final surface = colorScheme.surface;
+    final cardSurface = colorScheme.surfaceContainerLow;
+    final inputSurface = colorScheme.surfaceContainerHighest.withValues(alpha: isDarkMode ? 0.58 : 0.72);
+    final subtle = colorScheme.onSurfaceVariant;
+
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      scaffoldBackgroundColor: scaffoldBackground,
+      scaffoldBackgroundColor: surface,
       colorScheme: colorScheme,
-      textTheme: Typography.material2021(platform: TargetPlatform.android).black.apply(
-            bodyColor: textMain,
-            displayColor: textMain,
-          ),
+      textTheme: Typography.material2021(platform: TargetPlatform.android)
+          .black
+          .apply(bodyColor: colorScheme.onSurface, displayColor: colorScheme.onSurface),
       appBarTheme: AppBarTheme(
-        backgroundColor: scaffoldBackground,
+        backgroundColor: surface,
+        foregroundColor: colorScheme.onSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        iconTheme: IconThemeData(color: textMain),
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: TextStyle(
-          color: textMain,
+          color: colorScheme.onSurface,
           fontSize: 22,
           fontWeight: FontWeight.w800,
         ),
       ),
       cardTheme: CardThemeData(
-        color: cardColor,
+        color: cardSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: inputFill,
+        fillColor: inputSurface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide.none,
@@ -86,39 +68,96 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: colorScheme.primary.withValues(alpha: 0.38), width: 1.2),
+          borderSide: BorderSide(color: colorScheme.primary.withValues(alpha: 0.42), width: 1.2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: colorScheme.error.withValues(alpha: 0.62), width: 1.1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: colorScheme.error, width: 1.2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        labelStyle: TextStyle(color: textSubtle),
-        hintStyle: TextStyle(color: textSubtle.withValues(alpha: 0.78)),
+        labelStyle: TextStyle(color: subtle),
+        hintStyle: TextStyle(color: subtle.withValues(alpha: 0.78)),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: cardSurface,
+        indicatorColor: colorScheme.secondaryContainer,
+        surfaceTintColor: Colors.transparent,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return TextStyle(
+            color: selected ? colorScheme.onSecondaryContainer : subtle,
+            fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(color: selected ? colorScheme.onSecondaryContainer : subtle);
+        }),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: colorScheme.primaryContainer,
+        foregroundColor: colorScheme.onPrimaryContainer,
+        elevation: 3,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
-      dividerTheme: DividerThemeData(color: textSubtle.withValues(alpha: 0.16)),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: textSubtle.withValues(alpha: 0.24)),
-          foregroundColor: textMain,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w900),
         ),
       ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: colorScheme.outlineVariant),
+          foregroundColor: colorScheme.onSurface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          return states.contains(WidgetState.selected) ? colorScheme.onPrimary : colorScheme.outline;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          return states.contains(WidgetState.selected)
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerHighest;
+        }),
+      ),
+      dividerTheme: DividerThemeData(color: colorScheme.outlineVariant.withValues(alpha: 0.65)),
       popupMenuTheme: PopupMenuThemeData(
-        color: cardColor,
-        textStyle: TextStyle(color: textMain),
+        color: colorScheme.surfaceContainer,
+        surfaceTintColor: Colors.transparent,
+        textStyle: TextStyle(color: colorScheme.onSurface),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: colorScheme.surfaceContainerLow,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: brightness == Brightness.dark ? const Color(0xFF1F2937) : Colors.white,
-        contentTextStyle: TextStyle(color: textMain, fontWeight: FontWeight.w700),
-        actionTextColor: colorScheme.primary,
+        backgroundColor: colorScheme.inverseSurface,
+        contentTextStyle: TextStyle(color: colorScheme.onInverseSurface, fontWeight: FontWeight.w700),
+        actionTextColor: colorScheme.inversePrimary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
   }
 
-  static Color cardColor(BuildContext context) => Theme.of(context).cardTheme.color ?? (isDark(context) ? darkCard : lightCard);
-  static Color inputColor(BuildContext context) => isDark(context) ? darkInput : const Color(0xFFF3F5F8);
-  static Color textMain(BuildContext context) => isDark(context) ? darkTextMain : lightTextMain;
-  static Color textSubtle(BuildContext context) => isDark(context) ? darkTextSubtle : lightTextSubtle;
+  static Color cardColor(BuildContext context) => Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surfaceContainerLow;
+  static Color inputColor(BuildContext context) => Theme.of(context).inputDecorationTheme.fillColor ?? Theme.of(context).colorScheme.surfaceContainerHighest;
+  static Color textMain(BuildContext context) => Theme.of(context).colorScheme.onSurface;
+  static Color textSubtle(BuildContext context) => Theme.of(context).colorScheme.onSurfaceVariant;
   static bool isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
 }

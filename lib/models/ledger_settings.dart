@@ -15,6 +15,7 @@ class LedgerSettings {
     this.appLockFailedAttempts = 0,
     this.showZeroItems = false,
     this.assetSortAscending = false,
+    this.useDynamicColors = false,
   });
 
   String apiBaseUrl;
@@ -51,6 +52,9 @@ class LedgerSettings {
   /// 资产页排序方向。false = 默认从大到小，true = 从小到大。
   bool assetSortAscending;
 
+  /// 是否使用 Android/系统提供的 Material You / MD3 动态取色。
+  bool useDynamicColors;
+
   bool get hasPin => appPinSalt.trim().isNotEmpty && appPinHash.trim().isNotEmpty;
   bool get useDeviceLock => appLockEnabled && appBiometricsEnabled && hasPin;
   bool get usePinLock => appLockEnabled && hasPin;
@@ -86,6 +90,7 @@ class LedgerSettings {
       appLockFailedAttempts: ((json['appLockFailedAttempts'] as num?)?.toInt().clamp(0, 8) ?? 0).toInt(),
       showZeroItems: json['showZeroItems'] == true,
       assetSortAscending: json['assetSortAscending'] == true,
+      useDynamicColors: json['useDynamicColors'] == true,
     );
   }
 
@@ -103,6 +108,7 @@ class LedgerSettings {
         'appLockFailedAttempts': appLockFailedAttempts,
         'showZeroItems': showZeroItems,
         'assetSortAscending': assetSortAscending,
+        'useDynamicColors': useDynamicColors,
       };
 
   LedgerSettings copyWith({
@@ -119,6 +125,7 @@ class LedgerSettings {
     int? appLockFailedAttempts,
     bool? showZeroItems,
     bool? assetSortAscending,
+    bool? useDynamicColors,
   }) {
     return LedgerSettings(
       apiBaseUrl: apiBaseUrl ?? this.apiBaseUrl,
@@ -134,6 +141,7 @@ class LedgerSettings {
       appLockFailedAttempts: appLockFailedAttempts ?? this.appLockFailedAttempts,
       showZeroItems: showZeroItems ?? this.showZeroItems,
       assetSortAscending: assetSortAscending ?? this.assetSortAscending,
+      useDynamicColors: useDynamicColors ?? this.useDynamicColors,
     );
   }
 }

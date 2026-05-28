@@ -1,6 +1,0 @@
-"CFBundleDisplayName" = "Ledger";
-"CFBundleName" = "Ledger";
-"NSPhotoLibraryUsageDescription" = "Used to select proof images for debt records.";
-"NSCameraUsageDescription" = "Used to take proof photos for debt records.";
-"NSPhotoLibraryAddUsageDescription" = "Used to save or manage receipt images.";
-"NSFaceIDUsageDescription" = "Used to unlock Ledger with Face ID.";

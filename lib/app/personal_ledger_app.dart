@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:get/get.dart';
 
 import '../l10n/translation_service.dart';
@@ -85,24 +86,31 @@ class _PersonalLedgerAppState extends State<PersonalLedgerApp> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() => GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Ledger',
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: _themeMode(store.settings.themeMode),
-      translations: widget.translations,
-      locale: TranslationService.localeFromMode(store.settings.languageMode),
-      fallbackLocale: TranslationService.fallbackLocale,
-      supportedLocales: TranslationService.supportedLocales,
-      scrollBehavior: const _LedgerScrollBehavior(),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      home: const AppLockGate(child: HomePage()),
-    ));
+    return DynamicColorBuilder(
+      builder: (lightDynamic, darkDynamic) {
+        return Obx(() {
+          final useDynamicColors = store.settings.useDynamicColors;
+          return GetMaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Ledger',
+            theme: AppTheme.light(dynamicScheme: useDynamicColors ? lightDynamic : null),
+            darkTheme: AppTheme.dark(dynamicScheme: useDynamicColors ? darkDynamic : null),
+            themeMode: _themeMode(store.settings.themeMode),
+            translations: widget.translations,
+            locale: TranslationService.localeFromMode(store.settings.languageMode),
+            fallbackLocale: TranslationService.fallbackLocale,
+            supportedLocales: TranslationService.supportedLocales,
+            scrollBehavior: const _LedgerScrollBehavior(),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const AppLockGate(child: HomePage()),
+          );
+        });
+      },
+    );
   }
 
   ThemeMode _themeMode(String mode) {
