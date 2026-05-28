@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../app/app_theme.dart';
 import '../core/formatters.dart';
 import '../services/ledger_store.dart';
 
@@ -14,16 +13,19 @@ class SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final currency = store.settings.defaultCurrency;
+      final scheme = Theme.of(context).colorScheme;
+      final background = scheme.primaryContainer;
+      final foreground = scheme.onPrimaryContainer;
+      final subtle = foreground.withValues(alpha: 0.72);
 
       return Card(
+        color: background,
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-            color: AppTheme.isDark(context)
-                ? const Color(0xFF26334A)
-                : const Color(0xFF2F4668),
+            color: background,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,19 +35,19 @@ class SummaryCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'netWorth'.tr,
-                      style: const TextStyle(color: Colors.white70),
+                      style: TextStyle(color: subtle),
                     ),
                   ),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
                     child: store.showRefreshSpinner
-                        ? const SizedBox(
-                            key: ValueKey('summary-loading'),
+                        ? SizedBox(
+                            key: const ValueKey('summary-loading'),
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: foreground,
                             ),
                           )
                         : const SizedBox(
@@ -63,8 +65,8 @@ class SummaryCard extends StatelessWidget {
                 child: Text(
                   money(store.netWorth, currency),
                   maxLines: 1,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: foreground,
                     fontSize: 34,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -1.2,
@@ -79,6 +81,8 @@ class SummaryCard extends StatelessWidget {
                       title: 'assets'.tr,
                       value: money(store.assetTotal, currency,
                           showCurrency: false),
+                      foreground: foreground,
+                      subtle: subtle,
                     ),
                   ),
                   Expanded(
@@ -86,6 +90,8 @@ class SummaryCard extends StatelessWidget {
                       title: 'receivable'.tr,
                       value: money(store.receivableTotal, currency,
                           showCurrency: false),
+                      foreground: foreground,
+                      subtle: subtle,
                     ),
                   ),
                   Expanded(
@@ -93,6 +99,8 @@ class SummaryCard extends StatelessWidget {
                       title: 'payable'.tr,
                       value: money(store.payableTotal, currency,
                           showCurrency: false),
+                      foreground: foreground,
+                      subtle: subtle,
                     ),
                   ),
                 ],
@@ -105,8 +113,7 @@ class SummaryCard extends StatelessWidget {
                       '${'updatedAt'.tr}：${shortTime(store.updatedAt, fallback: 'notRefreshed'.tr)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: TextStyle(color: subtle, fontSize: 12),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -117,6 +124,7 @@ class SummaryCard extends StatelessWidget {
                     label: store.settings.showZeroItems
                         ? 'hideZeroItems'.tr
                         : 'showZeroItems'.tr,
+                    foreground: foreground,
                     onTap: () => store.toggleShowZeroItems(),
                   ),
                   const SizedBox(width: 6),
@@ -127,6 +135,7 @@ class SummaryCard extends StatelessWidget {
                     label: store.settings.assetSortAscending
                         ? 'sortSmallToLarge'.tr
                         : 'sortLargeToSmall'.tr,
+                    foreground: foreground,
                     onTap: () => store.toggleAssetSortOrder(),
                   ),
                 ],
@@ -140,10 +149,17 @@ class SummaryCard extends StatelessWidget {
 }
 
 class _Metric extends StatelessWidget {
-  const _Metric({required this.title, required this.value});
+  const _Metric({
+    required this.title,
+    required this.value,
+    required this.foreground,
+    required this.subtle,
+  });
 
   final String title;
   final String value;
+  final Color foreground;
+  final Color subtle;
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +168,7 @@ class _Metric extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
+          style: TextStyle(color: subtle, fontSize: 12),
         ),
         const SizedBox(height: 4),
         FittedBox(
@@ -162,8 +178,8 @@ class _Metric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.visible,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: foreground,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -177,11 +193,13 @@ class _SummaryActionChip extends StatelessWidget {
   const _SummaryActionChip({
     required this.icon,
     required this.label,
+    required this.foreground,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final Color foreground;
   final VoidCallback onTap;
 
   @override
@@ -195,11 +213,11 @@ class _SummaryActionChip extends StatelessWidget {
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
+            color: foreground.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: foreground.withValues(alpha: 0.08)),
           ),
-          child: Icon(icon, color: Colors.white, size: 15),
+          child: Icon(icon, color: foreground, size: 15),
         ),
       ),
     );

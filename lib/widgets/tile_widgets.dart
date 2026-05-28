@@ -90,7 +90,10 @@ class AssetTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                _AmountText(value: money(value, defaultCurrency)),
+                _AmountText(
+                  value: money(value, defaultCurrency),
+                  secondary: _assetAmountSubtitle(context, item),
+                ),
               ],
             ),
           ),
@@ -106,10 +109,24 @@ class AssetTile extends StatelessWidget {
     if (item.type == 'manual') {
       return '${trAssetType(item.type)} · ${item.currency}';
     }
-    if (item.type == 'metal') {
-      return '${item.symbol} · ${trimNum(item.quantity)} ${trMetalUnit(item.unit.isEmpty ? 'gram' : item.unit)}';
+    final symbol = item.symbol.trim();
+    if (symbol.isNotEmpty) {
+      return symbol;
     }
-    return '${item.symbol} · ${trimNum(item.quantity)}';
+    return trAssetType(item.type);
+  }
+
+  String _assetAmountSubtitle(BuildContext context, AssetItem item) {
+    if (item.type == 'cash') {
+      return '${trimNum(item.quantity)} ${item.currency}';
+    }
+    if (item.type == 'manual') {
+      return '${trimNum(item.quantity)} ${item.currency}';
+    }
+    if (item.type == 'metal') {
+      return '${trimNum(item.quantity)} ${trMetalUnit(item.unit.isEmpty ? 'gram' : item.unit)}';
+    }
+    return trimNum(item.quantity);
   }
 }
 
@@ -132,9 +149,7 @@ class DebtTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final value = numFromPath(valuation, ['value']);
-    final debtMeta = item.transactions.isEmpty
-        ? '${trDebtDirection(item.direction)} · ${trimNum(item.amount)} ${item.currency}'
-        : '${trDebtDirection(item.direction)} · ${'remainingAmount'.tr} ${trimNum(item.amount)} ${item.currency} · ${'settledAmount'.tr} ${trimNum(item.settledAmount)}';
+    final debtMeta = _debtAmountSubtitle(item);
     return Dismissible(
       key: ValueKey(item.id),
       direction: DismissDirection.endToStart,
@@ -160,14 +175,8 @@ class DebtTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               fontWeight: FontWeight.w800, fontSize: 16)),
-                      const SizedBox(height: 6),
-                      Text(debtMeta,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              TextStyle(color: AppTheme.textSubtle(context))),
                       if (item.note.trim().isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(item.note,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -184,10 +193,13 @@ class DebtTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 _AmountText(
-                    value: money(value, defaultCurrency),
-                    color: item.isPayable
-                        ? const Color(0xFFD64545)
-                        : const Color(0xFF248B5D)),
+                  value: money(value, defaultCurrency),
+                  secondary: debtMeta,
+                  secondaryMaxLines: 2,
+                  color: item.isPayable
+                      ? const Color(0xFFD64545)
+                      : const Color(0xFF248B5D),
+                ),
               ],
             ),
           ),
@@ -195,36 +207,71 @@ class DebtTile extends StatelessWidget {
       ),
     );
   }
+
+  String _debtAmountSubtitle(DebtItem item) {
+    final direction = trDebtDirection(item.direction);
+    if (item.transactions.isEmpty) {
+      return '$direction · ${trimNum(item.amount)} ${item.currency}';
+    }
+    return '$direction · ${'remainingAmount'.tr} ${trimNum(item.amount)} ${item.currency}\n${'settledAmount'.tr} ${trimNum(item.settledAmount)}';
+  }
 }
 
 class _AmountText extends StatelessWidget {
-  const _AmountText({required this.value, this.color});
+  const _AmountText({
+    required this.value,
+    this.color,
+    this.secondary,
+    this.secondaryMaxLines = 1,
+  });
 
   final String value;
   final Color? color;
+  final String? secondary;
+  final int secondaryMaxLines;
 
   @override
   Widget build(BuildContext context) {
+    final subtitle = secondary?.trim();
+
     return SizedBox(
-      width: 118,
+      width: 132,
       child: Center(
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                fontSize: 18,
-                height: 1.1,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.25,
-                color: color ?? AppTheme.textMain(context),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 18,
+                  height: 1.1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.25,
+                  color: color ?? AppTheme.textMain(context),
+                ),
               ),
             ),
-          ),
+            if (subtitle != null && subtitle.isNotEmpty) ...[
+              const SizedBox(height: 5),
+              Text(
+                subtitle,
+                maxLines: secondaryMaxLines,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: AppTheme.textSubtle(context),
+                  fontSize: 12,
+                  height: 1.18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
