@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -60,132 +59,159 @@ class _SettingsPageState extends State<SettingsPage> {
     return Obx(() {
       _uiVersion.value;
       return Scaffold(
-      appBar: AppBar(title: Text('settings'.tr)),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-            children: [
-              FormCard(
-                children: [
-                  LedgerDropdownField<String>(
-                    label: 'themeMode'.tr,
-                    value: _themeMode,
-                    items: [
-                      DropdownMenuItem(value: 'system', child: Text('system'.tr)),
-                      DropdownMenuItem(value: 'light', child: Text('light'.tr)),
-                      DropdownMenuItem(value: 'dark', child: Text('dark'.tr)),
-                    ],
-                    onChanged: (value) { _themeMode = value ?? _themeMode; _refreshUi(); },
-                  ),
-                  LedgerDropdownField<String>(
-                    label: 'language'.tr,
-                    value: _languageMode,
-                    items: [
-                      DropdownMenuItem(value: 'system', child: Text('system'.tr)),
-                      DropdownMenuItem(value: 'zh', child: Text('chinese'.tr)),
-                      DropdownMenuItem(value: 'zh_Hant', child: Text('traditionalChinese'.tr)),
-                      DropdownMenuItem(value: 'en', child: Text('english'.tr)),
-                    ],
-                    onChanged: (value) { _languageMode = value ?? _languageMode; _refreshUi(); },
-                  ),
-                  _SwitchRow(
-                    icon: Icons.palette_rounded,
-                    title: 'useDynamicColors'.tr,
-                    subtitle: 'useDynamicColorsDesc'.tr,
-                    value: _useDynamicColors,
-                    onChanged: (value) { _useDynamicColors = value; _refreshUi(); },
-                  ),
-                  LedgerDropdownField<String>(
-                    label: 'defaultCurrency'.tr,
-                    value: _currency,
-                    items: kCurrencies.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                    onChanged: (value) { _currency = value ?? _currency; _refreshUi(); },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              FormCard(
-                children: [
-                  LedgerTextField(
-                    controller: _apiBaseController,
-                    label: 'apiBaseUrl'.tr,
-                    hint: 'apiBaseUrlHint'.tr,
-                  ),
-                  LedgerTextField(
-                    controller: _tokenController,
-                    label: 'apiToken'.tr,
-                    hint: 'apiTokenHint'.tr,
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: FilledButton.icon(
-                      onPressed: _save,
-                      icon: const Icon(Icons.save_rounded),
-                      label: Text('saveSettings'.tr),
+        appBar: AppBar(title: Text('settings'.tr)),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              children: [
+                FormCard(
+                  children: [
+                    LedgerDropdownField<String>(
+                      label: 'themeMode'.tr,
+                      value: _themeMode,
+                      items: [
+                        DropdownMenuItem(
+                            value: 'system', child: Text('system'.tr)),
+                        DropdownMenuItem(
+                            value: 'light', child: Text('light'.tr)),
+                        DropdownMenuItem(value: 'dark', child: Text('dark'.tr)),
+                      ],
+                      onChanged: (value) {
+                        _themeMode = value ?? _themeMode;
+                        _refreshUi();
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: _testing ? null : _testApi,
-                      icon: _testing
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.network_check_rounded),
-                      label: Text('testApi'.tr),
+                    LedgerDropdownField<String>(
+                      label: 'language'.tr,
+                      value: _languageMode,
+                      items: [
+                        DropdownMenuItem(
+                            value: 'system', child: Text('system'.tr)),
+                        DropdownMenuItem(
+                            value: 'zh', child: Text('chinese'.tr)),
+                        DropdownMenuItem(
+                            value: 'zh_Hant',
+                            child: Text('traditionalChinese'.tr)),
+                        DropdownMenuItem(
+                            value: 'en', child: Text('english'.tr)),
+                      ],
+                      onChanged: (value) {
+                        _languageMode = value ?? _languageMode;
+                        _refreshUi();
+                      },
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              FormCard(
-                children: [
-                  _ActionRow(
-                    icon: Icons.lock_rounded,
-                    title: 'appLock'.tr,
-                    subtitle: _appLockSubtitle(),
-                    onTap: _showAppLockDialog,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              FormCard(
-                children: [
-                  _ActionRow(
-                    icon: Icons.copy_rounded,
-                    title: 'exportBackup'.tr,
-                    subtitle: 'exportBackupDesc'.tr,
-                    onTap: _exportBackup,
-                  ),
-                  const Divider(height: 1),
-                  _ActionRow(
-                    icon: Icons.paste_rounded,
-                    title: 'importBackup'.tr,
-                    subtitle: 'importBackupDesc'.tr,
-                    onTap: _showImportDialog,
-                  ),
-                  const Divider(height: 1),
-                  _ActionRow(
-                    icon: Icons.info_outline_rounded,
-                    title: 'aboutUs'.tr,
-                    subtitle: 'aboutUsDesc'.tr,
-                    onTap: _showAboutDialog,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'privacyNote'.tr,
-                style: TextStyle(color: Theme.of(context).hintColor, height: 1.45),
-              ),
-            ],
+                    _SwitchRow(
+                      icon: Icons.palette_rounded,
+                      title: 'useDynamicColors'.tr,
+                      subtitle: 'useDynamicColorsDesc'.tr,
+                      value: _useDynamicColors,
+                      onChanged: (value) {
+                        _useDynamicColors = value;
+                        _refreshUi();
+                      },
+                    ),
+                    LedgerDropdownField<String>(
+                      label: 'defaultCurrency'.tr,
+                      value: _currency,
+                      items: kCurrencies
+                          .map(
+                              (e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .toList(),
+                      onChanged: (value) {
+                        _currency = value ?? _currency;
+                        _refreshUi();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                FormCard(
+                  children: [
+                    LedgerTextField(
+                      controller: _apiBaseController,
+                      label: 'apiBaseUrl'.tr,
+                      hint: 'apiBaseUrlHint'.tr,
+                    ),
+                    LedgerTextField(
+                      controller: _tokenController,
+                      label: 'apiToken'.tr,
+                      hint: 'apiTokenHint'.tr,
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton.icon(
+                        onPressed: _save,
+                        icon: const Icon(Icons.save_rounded),
+                        label: Text('saveSettings'.tr),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: _testing ? null : _testApi,
+                        icon: _testing
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.network_check_rounded),
+                        label: Text('testApi'.tr),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                FormCard(
+                  children: [
+                    _ActionRow(
+                      icon: Icons.lock_rounded,
+                      title: 'appLock'.tr,
+                      subtitle: _appLockSubtitle(),
+                      onTap: _showAppLockDialog,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                FormCard(
+                  children: [
+                    _ActionRow(
+                      icon: Icons.copy_rounded,
+                      title: 'exportBackup'.tr,
+                      subtitle: 'exportBackupDesc'.tr,
+                      onTap: _exportBackup,
+                    ),
+                    const Divider(height: 1),
+                    _ActionRow(
+                      icon: Icons.paste_rounded,
+                      title: 'importBackup'.tr,
+                      subtitle: 'importBackupDesc'.tr,
+                      onTap: _showImportDialog,
+                    ),
+                    const Divider(height: 1),
+                    _ActionRow(
+                      icon: Icons.info_outline_rounded,
+                      title: 'aboutUs'.tr,
+                      subtitle: 'aboutUsDesc'.tr,
+                      onTap: _showAboutDialog,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'privacyNote'.tr,
+                  style: TextStyle(
+                      color: Theme.of(context).hintColor, height: 1.45),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
     });
   }
 
@@ -208,7 +234,9 @@ class _SettingsPageState extends State<SettingsPage> {
     );
     await store.updateSettings(settings);
     if (mounted && showToast) _toast('settingsSaved'.tr);
-    unawaited(store.refreshValuation(force: true, source: 'settingsSaved').catchError((_) {}));
+    unawaited(store
+        .refreshValuation(force: true, source: 'settingsSaved')
+        .catchError((_) {}));
   }
 
   Future<void> _testApi() async {
@@ -220,7 +248,10 @@ class _SettingsPageState extends State<SettingsPage> {
       final ok = await store.testApi();
       if (mounted) _toast(ok ? 'apiTestSuccess'.tr : 'apiTestFailed'.tr);
     } catch (e) {
-      if (mounted) _toast(e.toString().replaceFirst('Exception: ', ''), title: 'apiTestFailed'.tr, icon: Icons.error_outline_rounded);
+      if (mounted) {
+        _toast(e.toString().replaceFirst('Exception: ', ''),
+            title: 'apiTestFailed'.tr, icon: Icons.error_outline_rounded);
+      }
     } finally {
       if (mounted) {
         _testing = false;
@@ -228,7 +259,6 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     }
   }
-
 
   String _appLockSubtitle() {
     if (!store.settings.appLockEnabled) return 'appLockDisabled'.tr;
@@ -248,7 +278,9 @@ class _SettingsPageState extends State<SettingsPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('appLockDesc'.tr, style: TextStyle(color: Theme.of(context).hintColor, height: 1.45)),
+                Text('appLockDesc'.tr,
+                    style: TextStyle(
+                        color: Theme.of(context).hintColor, height: 1.45)),
                 const SizedBox(height: 16),
                 _SecurityOptionTile(
                   icon: Icons.fingerprint_rounded,
@@ -288,8 +320,10 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _enableDeviceLock() async {
     try {
       if (!store.settings.hasPin) {
-        _toast('pinRequiredBeforeBiometrics'.tr, title: 'appLock'.tr, icon: Icons.pin_rounded);
-        final pinCreated = await _showSetPinDialog(successToastKey: 'pinSetBeforeBiometricsToast');
+        _toast('pinRequiredBeforeBiometrics'.tr,
+            title: 'appLock'.tr, icon: Icons.pin_rounded);
+        final pinCreated = await _showSetPinDialog(
+            successToastKey: 'pinSetBeforeBiometricsToast');
         if (!pinCreated || !mounted) return;
       }
 
@@ -298,7 +332,8 @@ class _SettingsPageState extends State<SettingsPage> {
       final biometrics = await auth.getAvailableBiometrics();
       if (!mounted) return;
       if (!canCheck || biometrics.isEmpty) {
-        _toast('deviceBiometricsUnavailable'.tr, title: 'appLock'.tr, icon: Icons.error_outline_rounded);
+        _toast('deviceBiometricsUnavailable'.tr,
+            title: 'appLock'.tr, icon: Icons.error_outline_rounded);
         return;
       }
 
@@ -312,13 +347,19 @@ class _SettingsPageState extends State<SettingsPage> {
       );
       if (!ok) return;
       await store.enableDeviceAppLock();
-      if (mounted) _toast('biometricLockEnabled'.tr, icon: Icons.fingerprint_rounded);
+      if (mounted) {
+        _toast('biometricLockEnabled'.tr, icon: Icons.fingerprint_rounded);
+      }
     } catch (e) {
-      if (mounted) _toast('deviceBiometricsUnavailable'.tr, title: 'appLock'.tr, icon: Icons.error_outline_rounded);
+      if (mounted) {
+        _toast('deviceBiometricsUnavailable'.tr,
+            title: 'appLock'.tr, icon: Icons.error_outline_rounded);
+      }
     }
   }
 
-  Future<bool> _showSetPinDialog({String successToastKey = 'appLockEnabled'}) async {
+  Future<bool> _showSetPinDialog(
+      {String successToastKey = 'appLockEnabled'}) async {
     final result = await Get.dialog<List<String>>(
       const _SetPinDialog(),
       barrierDismissible: false,
@@ -328,21 +369,26 @@ class _SettingsPageState extends State<SettingsPage> {
     final pin = result[0];
     final confirm = result[1];
     if (!RegExp(r'^\d{6}$').hasMatch(pin)) {
-      _toast('pinMustBeSixDigits'.tr, title: 'appLock'.tr, icon: Icons.error_outline_rounded);
+      _toast('pinMustBeSixDigits'.tr,
+          title: 'appLock'.tr, icon: Icons.error_outline_rounded);
       return false;
     }
     if (pin != confirm) {
-      _toast('pinConfirmMismatch'.tr, title: 'appLock'.tr, icon: Icons.error_outline_rounded);
+      _toast('pinConfirmMismatch'.tr,
+          title: 'appLock'.tr, icon: Icons.error_outline_rounded);
       return false;
     }
-    await store.enablePinAppLock(pin, keepBiometrics: store.settings.appBiometricsEnabled);
+    await store.enablePinAppLock(pin,
+        keepBiometrics: store.settings.appBiometricsEnabled);
     if (mounted) _toast(successToastKey.tr, icon: Icons.lock_rounded);
     return true;
   }
 
   Future<void> _disableAppLock() async {
     await store.disableAppLock();
-    if (mounted) _toast('appLockDisabledToast'.tr, icon: Icons.lock_open_rounded);
+    if (mounted) {
+      _toast('appLockDisabledToast'.tr, icon: Icons.lock_open_rounded);
+    }
   }
 
   Future<void> _exportBackup() async {
@@ -354,7 +400,8 @@ class _SettingsPageState extends State<SettingsPage> {
         title: Text('exportBackup'.tr),
         content: Text('exportBackupDesc'.tr),
         actions: [
-          TextButton(onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
+          TextButton(
+              onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
           TextButton(
             onPressed: () => Get.back(result: 'copy'),
             child: Text('copyBackupToClipboard'.tr),
@@ -390,7 +437,9 @@ class _SettingsPageState extends State<SettingsPage> {
       if (path == null) return;
       if (mounted) _toast('backupSaved'.tr);
     } catch (e) {
-      if (mounted) _toast('backupSaveFailed'.tr, icon: Icons.error_outline_rounded);
+      if (mounted) {
+        _toast('backupSaveFailed'.tr, icon: Icons.error_outline_rounded);
+      }
     }
   }
 
@@ -409,7 +458,8 @@ class _SettingsPageState extends State<SettingsPage> {
         title: Text('importJsonBackup'.tr),
         content: Text('importBackupDesc'.tr),
         actions: [
-          TextButton(onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
+          TextButton(
+              onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
           TextButton(
             onPressed: () => Get.back(result: 'text'),
             child: Text('importFromClipboard'.tr),
@@ -440,13 +490,17 @@ class _SettingsPageState extends State<SettingsPage> {
       );
       final file = result?.files.single;
       if (file == null) return;
-      final bytes = file.bytes ?? (file.path == null ? null : await File(file.path!).readAsBytes());
+      final bytes = file.bytes ??
+          (file.path == null ? null : await File(file.path!).readAsBytes());
       if (bytes == null || bytes.isEmpty) {
         throw Exception('fileEmpty'.tr);
       }
       await _importRawBackup(_decodeBackupBytes(bytes));
     } catch (e) {
-      if (mounted) _toast(_friendlyImportError(e), title: 'importFailedTitle'.tr, icon: Icons.error_outline_rounded);
+      if (mounted) {
+        _toast(_friendlyImportError(e),
+            title: 'importFailedTitle'.tr, icon: Icons.error_outline_rounded);
+      }
     }
   }
 
@@ -466,8 +520,11 @@ class _SettingsPageState extends State<SettingsPage> {
           decoration: InputDecoration(hintText: 'pasteJson'.tr),
         ),
         actions: [
-          TextButton(onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
-          FilledButton(onPressed: () => Get.back(result: controller.text), child: Text('import'.tr)),
+          TextButton(
+              onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
+          FilledButton(
+              onPressed: () => Get.back(result: controller.text),
+              child: Text('import'.tr)),
         ],
       ),
     );
@@ -477,7 +534,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   String _decodeBackupBytes(List<int> bytes) {
-    if (bytes.length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) {
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xEF &&
+        bytes[1] == 0xBB &&
+        bytes[2] == 0xBF) {
       return utf8.decode(bytes.sublist(3), allowMalformed: true);
     }
     return utf8.decode(bytes, allowMalformed: true);
@@ -495,18 +555,26 @@ class _SettingsPageState extends State<SettingsPage> {
       _useDynamicColors = store.settings.useDynamicColors;
       _refreshUi();
       _toast('importSuccess'.tr);
-      unawaited(store.refreshValuation(force: true, source: 'importBackup').catchError((_) {}));
+      unawaited(store
+          .refreshValuation(force: true, source: 'importBackup')
+          .catchError((_) {}));
     } catch (e) {
-      if (mounted) _toast(_friendlyImportError(e), title: 'importFailedTitle'.tr, icon: Icons.error_outline_rounded);
+      if (mounted) {
+        _toast(_friendlyImportError(e),
+            title: 'importFailedTitle'.tr, icon: Icons.error_outline_rounded);
+      }
     }
   }
 
   String _friendlyImportError(Object error) {
-    final raw = error.toString().replaceFirst('Exception: ', '').replaceFirst('FormatException: ', '').trim();
+    final raw = error
+        .toString()
+        .replaceFirst('Exception: ', '')
+        .replaceFirst('FormatException: ', '')
+        .trim();
     if (raw.isEmpty) return 'importFailedInvalidJson'.tr;
     return raw;
   }
-
 
   Future<void> _showAboutDialog() async {
     FocusManager.instance.primaryFocus?.unfocus();
@@ -534,23 +602,34 @@ class _SettingsPageState extends State<SettingsPage> {
                             width: 42,
                             height: 42,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.10),
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Icon(Icons.menu_book_rounded, color: Theme.of(context).colorScheme.primary),
+                            child: Icon(Icons.menu_book_rounded,
+                                color: Theme.of(context).colorScheme.primary),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('aboutUs'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                                Text('aboutUs'.tr,
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900)),
                                 const SizedBox(height: 2),
-                                Text('appTitle'.tr, style: TextStyle(color: Theme.of(context).hintColor)),
+                                Text('appTitle'.tr,
+                                    style: TextStyle(
+                                        color: Theme.of(context).hintColor)),
                               ],
                             ),
                           ),
-                          IconButton(onPressed: () => Get.back<void>(), icon: const Icon(Icons.close_rounded)),
+                          IconButton(
+                              onPressed: () => Get.back<void>(),
+                              icon: const Icon(Icons.close_rounded)),
                         ],
                       ),
                     ),
@@ -560,7 +639,10 @@ class _SettingsPageState extends State<SettingsPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('aboutAppIntro'.tr, style: TextStyle(color: Theme.of(context).hintColor, height: 1.45)),
+                            Text('aboutAppIntro'.tr,
+                                style: TextStyle(
+                                    color: Theme.of(context).hintColor,
+                                    height: 1.45)),
                             const SizedBox(height: 18),
                             _AboutSectionTitle(title: 'usedTechnologies'.tr),
                             const SizedBox(height: 8),
@@ -575,17 +657,26 @@ class _SettingsPageState extends State<SettingsPage> {
                             const SizedBox(height: 18),
                             _AboutSectionTitle(title: 'sponsorship'.tr),
                             const SizedBox(height: 8),
-                            Text('sponsorshipDesc'.tr, style: TextStyle(color: Theme.of(context).hintColor, height: 1.45)),
+                            Text('sponsorshipDesc'.tr,
+                                style: TextStyle(
+                                    color: Theme.of(context).hintColor,
+                                    height: 1.45)),
                             const SizedBox(height: 10),
                             ...kDonationAddresses.map(
                               (item) => _DonationRow(
                                 chain: item.chain,
                                 address: item.address,
-                                onCopy: item.address.trim().isEmpty ? null : () => _copyToClipboard(item.address),
+                                onCopy: item.address.trim().isEmpty
+                                    ? null
+                                    : () => _copyToClipboard(item.address),
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text('donationAddressHint'.tr, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12, height: 1.4)),
+                            Text('donationAddressHint'.tr,
+                                style: TextStyle(
+                                    color: Theme.of(context).hintColor,
+                                    fontSize: 12,
+                                    height: 1.4)),
                           ],
                         ),
                       ),
@@ -605,11 +696,11 @@ class _SettingsPageState extends State<SettingsPage> {
     _toast('copiedToClipboard'.tr);
   }
 
-  void _toast(String message, {String? title, IconData icon = Icons.info_rounded}) {
+  void _toast(String message,
+      {String? title, IconData icon = Icons.info_rounded}) {
     showAppToast(message, title: title, icon: icon);
   }
 }
-
 
 class _SecurityOptionTile extends StatelessWidget {
   const _SecurityOptionTile({
@@ -636,34 +727,48 @@ class _SecurityOptionTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.10)
-              : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+              : Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withValues(alpha: 0.45),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: selected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.35) : Colors.transparent,
+            color: selected
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.35)
+                : Colors.transparent,
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).hintColor),
+            Icon(icon,
+                color: selected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).hintColor),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                  Text(title,
+                      style: const TextStyle(fontWeight: FontWeight.w900)),
                   const SizedBox(height: 3),
-                  Text(subtitle, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12.5, height: 1.35)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: Theme.of(context).hintColor,
+                          fontSize: 12.5,
+                          height: 1.35)),
                 ],
               ),
             ),
-            if (selected) Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary),
+            if (selected)
+              Icon(Icons.check_circle_rounded,
+                  color: Theme.of(context).colorScheme.primary),
           ],
         ),
       ),
     );
   }
 }
-
 
 class _SwitchRow extends StatelessWidget {
   const _SwitchRow({
@@ -692,9 +797,14 @@ class _SwitchRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 3),
-                Text(subtitle, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13, height: 1.35)),
+                Text(subtitle,
+                    style: TextStyle(
+                        color: Theme.of(context).hintColor,
+                        fontSize: 13,
+                        height: 1.35)),
               ],
             ),
           ),
@@ -706,7 +816,11 @@ class _SwitchRow extends StatelessWidget {
 }
 
 class _ActionRow extends StatelessWidget {
-  const _ActionRow({required this.icon, required this.title, required this.subtitle, required this.onTap});
+  const _ActionRow(
+      {required this.icon,
+      required this.title,
+      required this.subtitle,
+      required this.onTap});
 
   final IconData icon;
   final String title;
@@ -728,13 +842,17 @@ class _ActionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  Text(title,
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 3),
-                  Text(subtitle, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: Theme.of(context).hintColor, fontSize: 13)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: Theme.of(context).hintColor),
+            Icon(Icons.chevron_right_rounded,
+                color: Theme.of(context).hintColor),
           ],
         ),
       ),
@@ -756,7 +874,6 @@ class _AboutSectionTitle extends StatelessWidget {
   }
 }
 
-
 class _SetPinDialog extends StatefulWidget {
   const _SetPinDialog();
 
@@ -776,7 +893,8 @@ class _SetPinDialogState extends State<_SetPinDialog> {
   }
 
   void _submit() {
-    Get.back<List<String>>(result: [_pinController.text, _confirmController.text]);
+    Get.back<List<String>>(
+        result: [_pinController.text, _confirmController.text]);
   }
 
   @override
@@ -784,12 +902,15 @@ class _SetPinDialogState extends State<_SetPinDialog> {
     return AlertDialog(
       title: Text('setSixDigitPin'.tr),
       content: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.58),
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.58),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('setSixDigitPinDesc'.tr, style: TextStyle(color: Theme.of(context).hintColor, height: 1.45)),
+              Text('setSixDigitPinDesc'.tr,
+                  style: TextStyle(
+                      color: Theme.of(context).hintColor, height: 1.45)),
               const SizedBox(height: 14),
               TextField(
                 controller: _pinController,
@@ -797,8 +918,12 @@ class _SetPinDialogState extends State<_SetPinDialog> {
                 obscureText: true,
                 maxLength: 6,
                 autofocus: true,
-                decoration: InputDecoration(labelText: 'sixDigitPin'.tr, counterText: ''),
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                decoration: InputDecoration(
+                    labelText: 'sixDigitPin'.tr, counterText: ''),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6)
+                ],
                 onSubmitted: (_) => FocusScope.of(context).nextFocus(),
               ),
               const SizedBox(height: 10),
@@ -807,8 +932,12 @@ class _SetPinDialogState extends State<_SetPinDialog> {
                 keyboardType: TextInputType.number,
                 obscureText: true,
                 maxLength: 6,
-                decoration: InputDecoration(labelText: 'confirmSixDigitPin'.tr, counterText: ''),
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+                decoration: InputDecoration(
+                    labelText: 'confirmSixDigitPin'.tr, counterText: ''),
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6)
+                ],
                 onSubmitted: (_) => _submit(),
               ),
             ],
@@ -842,7 +971,10 @@ class _AboutLinkRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -852,15 +984,20 @@ class _AboutLinkRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w900)),
                 if (description != null && description!.trim().isNotEmpty) ...[
                   const SizedBox(height: 3),
-                  Text(description!, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12.5)),
+                  Text(description!,
+                      style: TextStyle(
+                          color: Theme.of(context).hintColor, fontSize: 12.5)),
                 ],
                 const SizedBox(height: 5),
                 SelectableText(
                   url,
-                  style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 12.5),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 12.5),
                 ),
               ],
             ),
@@ -878,7 +1015,8 @@ class _AboutLinkRow extends StatelessWidget {
 }
 
 class _DonationRow extends StatelessWidget {
-  const _DonationRow({required this.chain, required this.address, required this.onCopy});
+  const _DonationRow(
+      {required this.chain, required this.address, required this.onCopy});
 
   final String chain;
   final String address;
@@ -891,20 +1029,26 @@ class _DonationRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
           SizedBox(
             width: 96,
-            child: Text(chain, style: const TextStyle(fontWeight: FontWeight.w900)),
+            child: Text(chain,
+                style: const TextStyle(fontWeight: FontWeight.w900)),
           ),
           Expanded(
             child: SelectableText(
               hasAddress ? address : 'notConfigured'.tr,
               style: TextStyle(
-                color: hasAddress ? Theme.of(context).colorScheme.primary : Theme.of(context).hintColor,
+                color: hasAddress
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).hintColor,
                 fontSize: 12.5,
               ),
             ),
