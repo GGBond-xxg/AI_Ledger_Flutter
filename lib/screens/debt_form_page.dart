@@ -13,6 +13,7 @@ import '../core/id.dart';
 import '../core/app_toast.dart';
 import '../core/local_image_compressor.dart';
 import '../l10n/translation_service.dart';
+import '../models/asset_item.dart';
 import '../models/debt_item.dart';
 import '../services/ledger_store.dart';
 import '../widgets/common_cards.dart';
@@ -38,6 +39,8 @@ class _DebtFormPageState extends State<DebtFormPage> {
   List<String> _imageBase64List = <String>[];
   bool _pickingImage = false;
   final RxInt _uiVersion = 0.obs;
+  static const _noFundAssetValue = '__no_debt_fund_asset__';
+  String _fundAssetId = _noFundAssetValue;
 
   void _refreshUi() => _uiVersion.value++;
 
@@ -56,6 +59,16 @@ class _DebtFormPageState extends State<DebtFormPage> {
   }
 
   bool get _isEditing => widget.existing != null;
+
+  String _validFundAssetId(List<AssetItem> assets) {
+    if (_fundAssetId == _noFundAssetValue || assets.isEmpty) return _noFundAssetValue;
+    if (assets.any((item) => item.id == _fundAssetId)) return _fundAssetId;
+    return _noFundAssetValue;
+  }
+
+  String _fundAssetLabel(AssetItem asset) {
+    return '${asset.name} · ${asset.currency} ${asset.quantity}';
+  }
 
   @override
   void dispose() {
@@ -109,8 +122,36 @@ class _DebtFormPageState extends State<DebtFormPage> {
                         label: 'currency'.tr,
                         value: _currency,
                         items: kCurrencies.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                        onChanged: (value) { _currency = value ?? _currency; _refreshUi(); },
+                        onChanged: (value) {
+                          _currency = value ?? _currency;
+                          _fundAssetId = _noFundAssetValue;
+                          _refreshUi();
+                        },
                       ),
+                      if (!_isEditing)
+                        LedgerDropdownField<String>(
+                          label: 'fundAccountOptional'.tr,
+                          value: _validFundAssetId(store.debtFundAssets(_currency)),
+                          items: [
+                            DropdownMenuItem(value: _noFundAssetValue, child: Text('notSelected'.tr)),
+                            ...store.debtFundAssets(_currency).map((asset) => DropdownMenuItem<String>(
+                                  value: asset.id,
+                                  child: Text(_fundAssetLabel(asset)),
+                                )),
+                          ],
+                          onChanged: (value) {
+                            _fundAssetId = value ?? _noFundAssetValue;
+                            _refreshUi();
+                          },
+                        ),
+                      if (!_isEditing)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _direction == 'payable' ? 'debtCreatePayableFundTip'.tr : 'debtCreateReceivableFundTip'.tr,
+                            style: TextStyle(color: AppTheme.textSubtle(context), height: 1.4),
+                          ),
+                        ),
                       LedgerTextField(controller: _noteController, label: 'noteOptional'.tr, maxLines: 3),
                       _DebtImagePicker(
                         images: _imageBase64List,
@@ -180,8 +221,12 @@ class _DebtFormPageState extends State<DebtFormPage> {
       createdAt: existing?.createdAt,
     );
 
-    final Future<void> saveFuture =
-        _isEditing ? store.updateDebt(item) : store.addDebt(item);
+    final Future<void> saveFuture = _isEditing
+        ? store.updateDebt(item)
+        : store.addDebtWithOptionalFundAsset(
+            item,
+            assetId: _fundAssetId == _noFundAssetValue ? '' : _fundAssetId,
+          );
 
     // 先退出当前页，保存和估值刷新放后台执行，避免用户感觉“保存后卡住/不退出”。
     if (mounted) Get.back<void>();

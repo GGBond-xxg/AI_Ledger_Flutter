@@ -16,7 +16,7 @@ class DebtTransaction {
         createdAt = createdAt ?? DateTime.now();
 
   final String id;
-  String type; // repayment / collection
+  String type; // repayment / collection / borrow / lend
   double amount;
   String currency;
   String assetId;
@@ -27,12 +27,18 @@ class DebtTransaction {
 
   bool get isRepayment => type == 'repayment';
   bool get isCollection => type == 'collection';
+  bool get isBorrow => type == 'borrow';
+  bool get isLend => type == 'lend';
+  bool get isIncrease => isBorrow || isLend;
 
   factory DebtTransaction.fromJson(Map<String, dynamic> json) {
     final rawType = json['type'] as String? ?? 'repayment';
+    final normalizedType = rawType == 'collection'
+        ? 'collection'
+        : (rawType == 'borrow' ? 'borrow' : (rawType == 'lend' ? 'lend' : 'repayment'));
     return DebtTransaction(
       id: json['id'] as String? ?? newId(),
-      type: rawType == 'collection' ? 'collection' : 'repayment',
+      type: normalizedType,
       amount: asDouble(json['amount']),
       currency: (json['currency'] as String?)?.toUpperCase() ?? 'CNY',
       assetId: json['assetId'] as String? ?? '',

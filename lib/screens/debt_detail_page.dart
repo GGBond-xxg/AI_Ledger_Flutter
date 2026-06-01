@@ -32,6 +32,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
   static const _newAssetValue = '__new_debt_fund_asset__';
 
   String _assetId = '';
+  bool _increaseMode = false;
   bool _submitting = false;
 
   @override
@@ -54,8 +55,11 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
       }
 
       final fundAssets = store.debtFundAssets(debt.currency);
+      if (debt.isSettled && !_increaseMode) _increaseMode = true;
       final currentAssetId = _validAssetId(fundAssets);
-      final actionLabel = debt.isPayable ? 'recordRepayment'.tr : 'recordCollection'.tr;
+      final actionLabel = _increaseMode
+          ? (debt.isPayable ? 'addBorrowing'.tr : 'addLending'.tr)
+          : (debt.isPayable ? 'recordRepayment'.tr : 'recordCollection'.tr);
 
       return Scaffold(
         appBar: AppBar(
@@ -76,15 +80,33 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
               children: [
                 _DebtDetailHeader(debt: debt),
                 const SizedBox(height: 14),
-                if (debt.isSettled)
-                  const _SettledNotice()
-                else
-                  Form(
+                if (debt.isSettled) const _SettledNotice(),
+                Form(
                     key: _formKey,
                     child: FormCard(
                       children: [
-                        _SettlementTitle(debt: debt),
+                        _DebtActionTitle(debt: debt, increaseMode: _increaseMode),
                         const SizedBox(height: 14),
+                        LedgerDropdownField<String>(
+                          label: 'debtActionType'.tr,
+                          value: _increaseMode ? 'increase' : 'settle',
+                          items: [
+                            if (!debt.isSettled)
+                              DropdownMenuItem(
+                                value: 'settle',
+                                child: Text(debt.isPayable ? 'recordRepayment'.tr : 'recordCollection'.tr),
+                              ),
+                            DropdownMenuItem(
+                              value: 'increase',
+                              child: Text(debt.isPayable ? 'addBorrowing'.tr : 'addLending'.tr),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _increaseMode = value == 'increase';
+                            });
+                          },
+                        ),
                         LedgerDropdownField<String>(
                           label: 'fundAccount'.tr,
                           value: currentAssetId,
@@ -113,13 +135,15 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                           ),
                         LedgerTextField(
                           controller: _amountController,
-                          label: debt.isPayable ? 'repayAmount'.tr : 'collectAmount'.tr,
-                          hint: '${'maxAmount'.tr} ${money(debt.amount, debt.currency)}',
+                          label: _increaseMode
+                              ? (debt.isPayable ? 'borrowAmount'.tr : 'lendAmount'.tr)
+                              : (debt.isPayable ? 'repayAmount'.tr : 'collectAmount'.tr),
+                          hint: _increaseMode ? null : '${'maxAmount'.tr} ${money(debt.amount, debt.currency)}',
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           validator: (value) {
                             final number = double.tryParse(value?.trim() ?? '');
                             if (number == null || number <= 0) return 'enterPositiveAmount'.tr;
-                            if (number > debt.amount + 0.000000001) {
+                            if (!_increaseMode && number > debt.amount + 0.000000001) {
                               return '${'amountCannotExceed'.tr} ${money(debt.amount, debt.currency)}';
                             }
                             return null;
@@ -135,14 +159,14 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                           width: double.infinity,
                           height: 50,
                           child: FilledButton.icon(
-                            onPressed: _submitting ? null : () => _submit(debt, currentAssetId),
+                            onPressed: _submitting ? null : () => _submit(debt, currentAssetId, increaseMode: _increaseMode),
                             icon: _submitting
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
-                                : Icon(debt.isPayable ? Icons.call_made_rounded : Icons.call_received_rounded),
+                                : Icon(_increaseMode ? Icons.add_rounded : (debt.isPayable ? Icons.call_made_rounded : Icons.call_received_rounded)),
                             label: Text(actionLabel),
                           ),
                         ),
@@ -193,7 +217,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
     return '${asset.name} · ${asset.currency} ${trimNum(asset.quantity)}';
   }
 
-  Future<void> _submit(DebtItem debt, String assetId) async {
+  Future<void> _submit(DebtItem debt, String assetId, {required bool increaseMode}) async {
     if (!_formKey.currentState!.validate()) return;
     final amount = double.parse(_amountController.text.trim());
 
@@ -209,20 +233,32 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
         : null;
 
     setState(() => _submitting = true);
-    await store.settleDebtWithOptionalNewCashAsset(
-      debtId: debt.id,
-      assetId: newAsset?.id ?? assetId,
-      amount: amount,
-      newCashAsset: newAsset,
-      note: _noteController.text.trim(),
-    );
-    await store.refreshValuation(force: true, source: 'debtSettlement');
+    if (increaseMode) {
+      if (newAsset != null && !store.assets.any((asset) => asset.id == newAsset.id)) {
+        store.assets.insert(0, newAsset);
+      }
+      await store.increaseDebtWithFundAsset(
+        debtId: debt.id,
+        assetId: newAsset?.id ?? assetId,
+        amount: amount,
+        note: _noteController.text.trim(),
+      );
+    } else {
+      await store.settleDebtWithOptionalNewCashAsset(
+        debtId: debt.id,
+        assetId: newAsset?.id ?? assetId,
+        amount: amount,
+        newCashAsset: newAsset,
+        note: _noteController.text.trim(),
+      );
+    }
+    await store.refreshValuation(force: true, source: increaseMode ? 'debtIncreased' : 'debtSettlement');
     if (!mounted) return;
     _amountController.clear();
     _noteController.clear();
     setState(() => _submitting = false);
     showAppToast(
-      debt.isPayable ? 'repaymentSaved'.tr : 'collectionSaved'.tr,
+      increaseMode ? 'debtIncreaseSaved'.tr : (debt.isPayable ? 'repaymentSaved'.tr : 'collectionSaved'.tr),
       title: 'debtDetail'.tr,
       icon: Icons.check_circle_rounded,
     );
@@ -356,15 +392,20 @@ class _MiniDebtStat extends StatelessWidget {
   }
 }
 
-class _SettlementTitle extends StatelessWidget {
-  const _SettlementTitle({required this.debt});
+class _DebtActionTitle extends StatelessWidget {
+  const _DebtActionTitle({required this.debt, required this.increaseMode});
 
   final DebtItem debt;
+  final bool increaseMode;
 
   @override
   Widget build(BuildContext context) {
-    final label = debt.isPayable ? 'recordRepayment'.tr : 'recordCollection'.tr;
-    final desc = debt.isPayable ? 'repaymentFormDesc'.tr : 'collectionFormDesc'.tr;
+    final label = increaseMode
+        ? (debt.isPayable ? 'addBorrowing'.tr : 'addLending'.tr)
+        : (debt.isPayable ? 'recordRepayment'.tr : 'recordCollection'.tr);
+    final desc = increaseMode
+        ? (debt.isPayable ? 'addBorrowingFormDesc'.tr : 'addLendingFormDesc'.tr)
+        : (debt.isPayable ? 'repaymentFormDesc'.tr : 'collectionFormDesc'.tr);
     final color = debt.isPayable ? const Color(0xFFD64545) : const Color(0xFF248B5D);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,7 +417,7 @@ class _SettlementTitle extends StatelessWidget {
             color: color.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Icon(debt.isPayable ? Icons.payments_rounded : Icons.add_card_rounded, color: color),
+          child: Icon(increaseMode ? Icons.add_card_rounded : (debt.isPayable ? Icons.payments_rounded : Icons.add_card_rounded), color: color),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -451,10 +492,15 @@ class _DebtTransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isRepayment = transaction.isRepayment;
-    final color = isRepayment ? const Color(0xFFD64545) : const Color(0xFF248B5D);
-    final title = isRepayment ? 'repayment'.tr : 'collection'.tr;
+    final isBorrow = transaction.isBorrow;
+    final isLend = transaction.isLend;
+    final decreasesFund = isRepayment || isLend;
+    final color = decreasesFund ? const Color(0xFFD64545) : const Color(0xFF248B5D);
+    final title = isBorrow
+        ? 'borrowingAdded'.tr
+        : (isLend ? 'lendingAdded'.tr : (isRepayment ? 'repayment'.tr : 'collection'.tr));
     final assetName = transaction.assetName.trim().isEmpty ? 'fundAccount'.tr : transaction.assetName.trim();
-    final sign = isRepayment ? '-' : '+';
+    final sign = decreasesFund ? '-' : '+';
 
     return Card(
       child: Padding(
@@ -468,7 +514,7 @@ class _DebtTransactionTile extends StatelessWidget {
                 color: color.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(15),
               ),
-              child: Icon(isRepayment ? Icons.call_made_rounded : Icons.call_received_rounded, color: color, size: 20),
+              child: Icon(decreasesFund ? Icons.call_made_rounded : Icons.call_received_rounded, color: color, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(

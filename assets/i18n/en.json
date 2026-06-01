@@ -381,5 +381,21 @@
   "newInvestmentCurrency": "New investment quote currency",
   "newInvestmentUnit": "New investment unit",
   "fundSourceBillNote": "No funding account: only create the holding, no bill. With a funding account: deduct funds and create an investment-buy bill.",
-  "investmentFundingRule": "No funding account: only create the investment holding and do not add a bill. With a funding account: deduct that account and add a buy-investment bill."
+  "investmentFundingRule": "No funding account: only create the investment holding and do not add a bill. With a funding account: deduct that account and add a buy-investment bill.",
+  "fundAccountOptional": "Fund account (optional)",
+  "notSelected": "Not selected",
+  "debtCreatePayableFundTip": "Payable: selecting a fund account adds this amount to that account when saved.",
+  "debtCreateReceivableFundTip": "Receivable: selecting a fund account deducts this amount from that account when saved.",
+  "debtActionType": "Action type",
+  "addBorrowing": "Add borrowing",
+  "addLending": "Add lending",
+  "borrowAmount": "Borrowing amount",
+  "lendAmount": "Lending amount",
+  "addBorrowingFormDesc": "Choose a fund account and enter the added borrowing amount. Funds increase and payable balance increases.",
+  "addLendingFormDesc": "Choose a fund account and enter the added lending amount. Funds decrease and receivable balance increases.",
+  "debtIncreaseSaved": "Record added",
+  "borrowingAdded": "Borrowing added",
+  "lendingAdded": "Lending added",
+  "billCategory_debtBorrowAdd": "Borrowing added",
+  "billCategory_debtLendAdd": "Lending added"
 }

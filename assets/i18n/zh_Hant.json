@@ -381,5 +381,21 @@
   "newInvestmentCurrency": "新理財計價幣種",
   "newInvestmentUnit": "新理財單位",
   "fundSourceBillNote": "不選擇資金來源：只建立理財持倉，不產生帳單；選擇資金來源：扣除資金並產生買入理財帳單。",
-  "investmentFundingRule": "不選擇資金來源：只建立理財持倉，不寫入帳單；選擇資金來源：儲存後會扣除該資金帳戶，並生成買入理財帳單。"
+  "investmentFundingRule": "不選擇資金來源：只建立理財持倉，不寫入帳單；選擇資金來源：儲存後會扣除該資金帳戶，並生成買入理財帳單。",
+  "fundAccountOptional": "資金來源帳戶（可選）",
+  "notSelected": "不選擇",
+  "debtCreatePayableFundTip": "欠款：選擇資金帳戶後，儲存時會把這筆錢加到該帳戶。",
+  "debtCreateReceivableFundTip": "借款：選擇資金帳戶後，儲存時會從該帳戶扣除這筆錢。",
+  "debtActionType": "操作類型",
+  "addBorrowing": "添加欠款",
+  "addLending": "添加借款",
+  "borrowAmount": "欠款金額",
+  "lendAmount": "借款金額",
+  "addBorrowingFormDesc": "選擇資金帳戶並輸入新增欠款金額，儲存後資金增加，欠款同步增加。",
+  "addLendingFormDesc": "選擇資金帳戶並輸入新增借款金額，儲存後資金扣除，應收同步增加。",
+  "debtIncreaseSaved": "已添加記錄",
+  "borrowingAdded": "新增欠款",
+  "lendingAdded": "新增借款",
+  "billCategory_debtBorrowAdd": "新增欠款",
+  "billCategory_debtLendAdd": "新增借款"
 }

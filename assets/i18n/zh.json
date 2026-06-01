@@ -381,5 +381,21 @@
   "newInvestmentCurrency": "新理财计价币种",
   "newInvestmentUnit": "新理财单位",
   "fundSourceBillNote": "不选择资金来源：只创建理财持仓，不生成账单；选择资金来源：扣除资金并生成买入理财账单。",
-  "investmentFundingRule": "不选择资金来源：只创建理财持仓，不写入账单；选择资金来源：保存后会扣除该资金账户，并生成买入理财账单。"
+  "investmentFundingRule": "不选择资金来源：只创建理财持仓，不写入账单；选择资金来源：保存后会扣除该资金账户，并生成买入理财账单。",
+  "fundAccountOptional": "资金来源账户（可选）",
+  "notSelected": "不选择",
+  "debtCreatePayableFundTip": "欠款：选择资金账户后，保存时会把这笔钱加到该账户。",
+  "debtCreateReceivableFundTip": "借款：选择资金账户后，保存时会从该账户扣除这笔钱。",
+  "debtActionType": "操作类型",
+  "addBorrowing": "添加欠款",
+  "addLending": "添加借款",
+  "borrowAmount": "欠款金额",
+  "lendAmount": "借款金额",
+  "addBorrowingFormDesc": "选择资金账户并输入新增欠款金额，保存后资金增加，欠款同步增加。",
+  "addLendingFormDesc": "选择资金账户并输入新增借款金额，保存后资金扣除，应收同步增加。",
+  "debtIncreaseSaved": "已添加记录",
+  "borrowingAdded": "新增欠款",
+  "lendingAdded": "新增借款",
+  "billCategory_debtBorrowAdd": "新增欠款",
+  "billCategory_debtLendAdd": "新增借款"
 }

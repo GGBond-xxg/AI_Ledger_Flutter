@@ -74,6 +74,7 @@ class BillItem {
   bool get hasLinkedInvestment => investmentAssetId.trim().isNotEmpty && investmentQuantity > 0;
   bool get isDebtCreation => isDebtBill && (category == 'debtPayable' || category == 'debtReceivable');
   bool get isDebtSettlement => isDebtBill && (category == 'debtRepayment' || category == 'debtCollection');
+  bool get isDebtIncrease => isDebtBill && (category == 'debtBorrowAdd' || category == 'debtLendAdd');
 
   factory BillItem.fromJson(Map<String, dynamic> json) {
     final rawType = json['type'] as String? ?? 'expense';
