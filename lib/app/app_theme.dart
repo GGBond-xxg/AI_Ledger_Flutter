@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const primary = Color(0xFF4D5F91);
+  static const primary = Color(0xFF3F6DF6);
+  static const lightPageBackground = Color(0xFFF8F6FF);
+  static const lightSheetBackground = Color(0xFFFAF8FF);
 
   // Legacy text colors kept for older helpers that still read AppTheme directly.
   // The main UI now uses Material 3 ColorScheme through textMain/textSubtle.
@@ -21,7 +23,7 @@ class AppTheme {
   static ThemeData _base(ColorScheme colorScheme) {
     final brightness = colorScheme.brightness;
     final isDarkMode = brightness == Brightness.dark;
-    final surface = colorScheme.surface;
+    final pageSurface = isDarkMode ? colorScheme.surface : lightPageBackground;
     final cardSurface = colorScheme.surfaceContainerLow;
     final inputSurface = colorScheme.surfaceContainerHighest.withValues(alpha: isDarkMode ? 0.58 : 0.72);
     final subtle = colorScheme.onSurfaceVariant;
@@ -29,17 +31,18 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      scaffoldBackgroundColor: surface,
+      scaffoldBackgroundColor: pageSurface,
       colorScheme: colorScheme,
       textTheme: Typography.material2021(platform: TargetPlatform.android)
           .black
           .apply(bodyColor: colorScheme.onSurface, displayColor: colorScheme.onSurface),
       appBarTheme: AppBarTheme(
-        backgroundColor: surface,
+        backgroundColor: pageSurface,
         foregroundColor: colorScheme.onSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
+        titleSpacing: 16,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: TextStyle(
           color: colorScheme.onSurface,
@@ -145,6 +148,15 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: isDarkMode ? colorScheme.surfaceContainerLow : lightSheetBackground,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: isDarkMode ? colorScheme.surfaceContainerLow : lightSheetBackground,
+        modalBarrierColor: Colors.black.withValues(alpha: isDarkMode ? 0.52 : 0.38),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+      ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: colorScheme.inverseSurface,
         contentTextStyle: TextStyle(color: colorScheme.onInverseSurface, fontWeight: FontWeight.w700),
@@ -155,6 +167,16 @@ class AppTheme {
     );
   }
 
+  static Color pageBackground(BuildContext context) => Theme.of(context).scaffoldBackgroundColor;
+
+  static Color sheetBackground(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return isDark(context) ? colorScheme.surfaceContainerLow : lightSheetBackground;
+  }
+
+  static EdgeInsets pageInsets({double bottom = 24}) => EdgeInsets.fromLTRB(16, 8, 16, bottom);
+
+  static Color sheetColor(BuildContext context) => sheetBackground(context);
   static Color cardColor(BuildContext context) => Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surfaceContainerLow;
   static Color inputColor(BuildContext context) => Theme.of(context).inputDecorationTheme.fillColor ?? Theme.of(context).colorScheme.surfaceContainerHighest;
   static Color textMain(BuildContext context) => Theme.of(context).colorScheme.onSurface;

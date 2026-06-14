@@ -617,6 +617,7 @@ class LedgerStore extends GetxController {
     selectedBillMonth.value = DateTime(item.occurredAt.year, item.occurredAt.month);
     _touchBills();
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -635,6 +636,7 @@ class LedgerStore extends GetxController {
     selectedBillMonth.value = DateTime(item.occurredAt.year, item.occurredAt.month);
     _touchBills();
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -648,6 +650,7 @@ class LedgerStore extends GetxController {
     }
     _touchBills();
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -920,12 +923,12 @@ class LedgerStore extends GetxController {
   }
 
   void setMainTab(int index) {
-    selectedMainTab.value = index.clamp(0, 1).toInt();
+    selectedMainTab.value = index.clamp(0, 4).toInt();
     update();
   }
 
   void setAssetTab(int index) {
-    selectedAssetTab.value = index.clamp(0, 2).toInt();
+    selectedAssetTab.value = index.clamp(0, 4).toInt();
     update();
   }
 
@@ -1260,6 +1263,7 @@ class LedgerStore extends GetxController {
       assets.insert(0, item);
     }
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -1314,6 +1318,7 @@ class LedgerStore extends GetxController {
 
     _dedupeInvestmentAssets();
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -1349,6 +1354,7 @@ class LedgerStore extends GetxController {
     }
     _dedupeInvestmentAssets();
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -1356,6 +1362,7 @@ class LedgerStore extends GetxController {
   Future<void> removeAsset(String id) async {
     assets.removeWhere((e) => e.id == id);
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -1388,6 +1395,7 @@ class LedgerStore extends GetxController {
     selectedBillMonth.value = DateTime(bill.occurredAt.year, bill.occurredAt.month);
     _touchBills();
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -1413,6 +1421,7 @@ class LedgerStore extends GetxController {
     }
     _touchBills();
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -1434,6 +1443,7 @@ class LedgerStore extends GetxController {
     bills.removeWhere((bill) => bill.isDebtBill && bill.debtId == id);
     _touchBills();
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -1516,6 +1526,7 @@ class LedgerStore extends GetxController {
 
     debts[debtIndex] = debt;
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -1605,6 +1616,7 @@ class LedgerStore extends GetxController {
     assets[assetIndex] = asset;
     debts[debtIndex] = debt;
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }
@@ -1668,6 +1680,7 @@ class LedgerStore extends GetxController {
 
     debts[debtIndex] = debt;
     _syncValuationAfterLocalChange();
+    update();
     await save();
     update();
   }

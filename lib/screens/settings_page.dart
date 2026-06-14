@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:file_picker/file_picker.dart';
 
+import '../app/app_theme.dart';
 import '../core/app_constants.dart';
 import '../core/formatters.dart';
 import '../core/app_toast.dart';
@@ -59,10 +60,15 @@ class _SettingsPageState extends State<SettingsPage> {
     return Obx(() {
       _uiVersion.value;
       return Scaffold(
-        appBar: AppBar(title: Text('settings'.tr)),
+        backgroundColor: AppTheme.pageBackground(context),
+        appBar: AppBar(
+          centerTitle: false,
+          backgroundColor: AppTheme.pageBackground(context),
+          title: Text('settings'.tr),
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
             child: Column(
               children: [
                 FormCard(
@@ -138,29 +144,35 @@ class _SettingsPageState extends State<SettingsPage> {
                       label: 'apiToken'.tr,
                       hint: 'apiTokenHint'.tr,
                     ),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: FilledButton.icon(
-                        onPressed: _save,
-                        icon: const Icon(Icons.save_rounded),
-                        label: Text('saveSettings'.tr),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: FilledButton.icon(
+                          onPressed: _save,
+                          icon: const Icon(Icons.save_rounded),
+                          label: Text('saveSettings'.tr),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton.icon(
-                        onPressed: _testing ? null : _testApi,
-                        icon: _testing
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.network_check_rounded),
-                        label: Text('testApi'.tr),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: _testing ? null : _testApi,
+                          icon: _testing
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.network_check_rounded),
+                          label: Text('testApi'.tr),
+                        ),
                       ),
                     ),
                   ],
@@ -299,12 +311,15 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 if (store.settings.appLockEnabled) ...[
                   const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _disableAppLock,
-                      icon: const Icon(Icons.lock_open_rounded),
-                      label: Text('disableAppLock'.tr),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _disableAppLock,
+                        icon: const Icon(Icons.lock_open_rounded),
+                        label: Text('disableAppLock'.tr),
+                      ),
                     ),
                   ),
                 ],
@@ -788,7 +803,7 @@ class _SwitchRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
       child: Row(
         children: [
           Icon(icon, color: Theme.of(context).colorScheme.primary),
@@ -833,7 +848,7 @@ class _ActionRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
         child: Row(
           children: [
             Icon(icon, color: Theme.of(context).colorScheme.primary),

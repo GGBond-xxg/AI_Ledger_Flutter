@@ -26,15 +26,41 @@ class LedgerTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        validator: validator,
-        onChanged: onChanged,
-        decoration: InputDecoration(labelText: label, hintText: hint),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextFormField(
+            controller: controller,
+            keyboardType: keyboardType,
+            maxLines: maxLines,
+            validator: validator,
+            onChanged: onChanged,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: hint,
+              filled: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -64,35 +90,50 @@ class LedgerDropdownField<T> extends StatelessWidget {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
         onTap: () async {
           final selected = await _showPicker(context);
-          if (selected != null) {
-            onChanged(selected);
-          }
+          if (selected != null) onChanged(selected);
         },
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: label,
-            suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 12, 13),
           child: Row(
             children: [
               Expanded(
-                child: DefaultTextStyle.merge(
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppTheme.textMain(context)),
-                  child: selectedItem?.child ?? Text(value.toString()),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    DefaultTextStyle.merge(
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.onSurface,
+                      ),
+                      child: selectedItem?.child ?? Text(value.toString()),
+                    ),
+                  ],
                 ),
               ),
+              Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurfaceVariant),
             ],
           ),
         ),
       ),
     );
   }
+
 
   Future<T?> _showPicker(BuildContext context) async {
     final theme = Theme.of(context);
@@ -111,7 +152,7 @@ class LedgerDropdownField<T> extends StatelessWidget {
               width: double.infinity,
               constraints: BoxConstraints(maxHeight: screenHeight * 0.92),
               decoration: BoxDecoration(
-                color: AppTheme.cardColor(context),
+                color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 boxShadow: [
                   BoxShadow(
@@ -128,7 +169,7 @@ class LedgerDropdownField<T> extends StatelessWidget {
                     width: 42,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: AppTheme.textSubtle(context).withValues(alpha: 0.30),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.30),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -160,8 +201,8 @@ class LedgerDropdownField<T> extends StatelessWidget {
                         final selected = item.value == value;
                         return Material(
                           color: selected
-                              ? theme.colorScheme.primary.withValues(alpha: 0.13)
-                              : AppTheme.inputColor(context),
+                              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.58)
+                              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: AppTheme.isDark(context) ? 0.34 : 0.48),
                           borderRadius: BorderRadius.circular(18),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(18),
@@ -175,7 +216,7 @@ class LedgerDropdownField<T> extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
-                                        color: AppTheme.textMain(context),
+                                        color: theme.colorScheme.onSurface,
                                       ),
                                       child: item.child,
                                     ),
@@ -203,5 +244,4 @@ class LedgerDropdownField<T> extends StatelessWidget {
       backgroundColor: Colors.transparent,
     );
   }
-
 }

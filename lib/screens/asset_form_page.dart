@@ -20,10 +20,12 @@ class AssetFormPage extends StatefulWidget {
     super.key,
     required this.investmentDefault,
     this.existing,
+    this.initialType,
   });
 
   final bool investmentDefault;
   final AssetItem? existing;
+  final String? initialType;
 
   @override
   State<AssetFormPage> createState() => _AssetFormPageState();
@@ -40,7 +42,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
   final _noteController = TextEditingController();
 
   late String _type =
-      widget.existing?.type ?? (widget.investmentDefault ? 'stock' : 'cash');
+      widget.existing?.type ?? widget.initialType ?? (widget.investmentDefault ? 'stock' : 'cash');
   String _currency = 'CNY';
   String _unit = 'gram';
   String _fundAssetId = '';
@@ -107,10 +109,28 @@ class _AssetFormPageState extends State<AssetFormPage> {
       final selectedFundAsset = _findAssetById(store.billLinkedAssets, _fundAssetId);
 
       return Scaffold(
-        appBar: AppBar(title: Text(_title())),
+        backgroundColor: AppTheme.pageBackground(context),
+        appBar: AppBar(
+          centerTitle: true,
+          backgroundColor: AppTheme.pageBackground(context),
+          surfaceTintColor: Colors.transparent,
+          title: Text(_title(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            onPressed: () => Get.back<void>(),
+          ),
+          actions: [
+            IconButton(
+              tooltip: '保存',
+              icon: const Icon(Icons.check_rounded),
+              onPressed: _submit,
+            ),
+            const SizedBox(width: 6),
+          ],
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: AppTheme.pageInsets(),
             child: Form(
               key: _formKey,
               child: Column(
@@ -263,7 +283,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                             },
                           ),
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                           child: Text(
                             'investmentFundingRule'.tr,
                             style: TextStyle(
@@ -315,6 +335,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
           ? 'editInvestment'.tr
           : 'editAsset'.tr;
     }
+    if (widget.initialType == 'manual') return '添加存款理财';
     return widget.investmentDefault ? 'addInvestment'.tr : 'addAsset'.tr;
   }
 
@@ -501,7 +522,7 @@ class _MarketSuggestionBox extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),

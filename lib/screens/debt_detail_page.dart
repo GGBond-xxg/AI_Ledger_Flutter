@@ -46,10 +46,16 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      // Explicit reactive reads for GetX. The builder relies on derived debt/account lists.
+      store.debts.length;
+      store.assets.length;
+      store.valuation;
+      store.settings;
       final debt = _currentDebt();
       if (debt == null) {
         return Scaffold(
-          appBar: AppBar(title: Text('debtDetail'.tr)),
+          backgroundColor: AppTheme.pageBackground(context),
+          appBar: AppBar(backgroundColor: AppTheme.pageBackground(context), title: Text('debtDetail'.tr)),
           body: Center(child: Text('debtNotFound'.tr)),
         );
       }
@@ -62,7 +68,9 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
           : (debt.isPayable ? 'recordRepayment'.tr : 'recordCollection'.tr);
 
       return Scaffold(
+        backgroundColor: AppTheme.pageBackground(context),
         appBar: AppBar(
+          backgroundColor: AppTheme.pageBackground(context),
           title: Text('debtDetail'.tr),
           actions: [
             IconButton(
@@ -74,7 +82,7 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -155,19 +163,22 @@ class _DebtDetailPageState extends State<DebtDetailPage> {
                           maxLines: 2,
                         ),
                         const SizedBox(height: 4),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: FilledButton.icon(
-                            onPressed: _submitting ? null : () => _submit(debt, currentAssetId, increaseMode: _increaseMode),
-                            icon: _submitting
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : Icon(_increaseMode ? Icons.add_rounded : (debt.isPayable ? Icons.call_made_rounded : Icons.call_received_rounded)),
-                            label: Text(actionLabel),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: FilledButton.icon(
+                              onPressed: _submitting ? null : () => _submit(debt, currentAssetId, increaseMode: _increaseMode),
+                              icon: _submitting
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : Icon(_increaseMode ? Icons.add_rounded : (debt.isPayable ? Icons.call_made_rounded : Icons.call_received_rounded)),
+                              label: Text(actionLabel),
+                            ),
                           ),
                         ),
                       ],

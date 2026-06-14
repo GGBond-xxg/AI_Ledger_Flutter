@@ -358,7 +358,7 @@
   "addInvestmentActionSubtitle": "可不選資金來源；選擇後會扣除資金並產生帳單記錄",
   "sellInvestmentActionSubtitle": "記錄賣出訂單，自動回到資金帳戶",
   "useDynamicColors": "使用 MD3 動態取色",
-  "useDynamicColorsDesc": "開啟後跟隨系統 Material You / 桌布顏色；關閉後使用固定品牌色。",
+  "useDynamicColorsDesc": "開啟後跟隨系統 Material You / 桌布顏色",
   "billCategory_debtPayable": "新增負債",
   "billCategory_debtReceivable": "新增應收",
   "billCategory_debtRepayment": "還款",

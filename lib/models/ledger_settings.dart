@@ -3,7 +3,7 @@ import '../core/app_constants.dart';
 class LedgerSettings {
   LedgerSettings({
     this.apiBaseUrl = '',
-    this.apiToken = '',
+    this.apiToken = '147258',
     this.defaultCurrency = 'CNY',
     this.themeMode = 'system',
     this.languageMode = 'system',
@@ -15,7 +15,7 @@ class LedgerSettings {
     this.appLockFailedAttempts = 0,
     this.showZeroItems = false,
     this.assetSortAscending = false,
-    this.useDynamicColors = false,
+    this.useDynamicColors = true,
   });
 
   String apiBaseUrl;
@@ -78,7 +78,7 @@ class LedgerSettings {
 
     return LedgerSettings(
       apiBaseUrl: apiBase == null || apiBase.isEmpty || apiBase == kDefaultApiBaseUrl ? '' : apiBase,
-      apiToken: (json['apiToken'] as String?) ?? '',
+      apiToken: ((json['apiToken'] as String?)?.trim().isNotEmpty == true) ? (json['apiToken'] as String).trim() : '147258',
       defaultCurrency: (json['defaultCurrency'] as String?)?.toUpperCase() ?? 'CNY',
       themeMode: ['system', 'light', 'dark'].contains(theme) ? theme! : 'system',
       languageMode: ['system', 'zh', 'zh_Hant', 'en'].contains(language) ? language! : 'system',

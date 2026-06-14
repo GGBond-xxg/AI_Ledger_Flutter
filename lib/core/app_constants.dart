@@ -13,5 +13,5 @@ const List<String> kMetalUnits = [
   'troy_ounce',
 ];
 
-const String kDefaultApiBaseUrl = '';
-const String kApiBaseUrlHint = 'https://你的行情 API 域名';
+const String kDefaultApiBaseUrl = 'https://eurit.eu.cc';
+const String kApiBaseUrlHint = 'https://eurit.eu.cc';

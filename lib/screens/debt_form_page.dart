@@ -20,8 +20,9 @@ import '../widgets/common_cards.dart';
 import '../widgets/form_fields.dart';
 
 class DebtFormPage extends StatefulWidget {
-  const DebtFormPage({super.key, this.existing});
+  const DebtFormPage({super.key, this.existing, this.initialDirection});
   final DebtItem? existing;
+  final String? initialDirection;
 
   @override
   State<DebtFormPage> createState() => _DebtFormPageState();
@@ -34,7 +35,7 @@ class _DebtFormPageState extends State<DebtFormPage> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
 
-  String _direction = 'payable';
+  late String _direction = widget.initialDirection ?? 'payable';
   String _currency = 'CNY';
   List<String> _imageBase64List = <String>[];
   bool _pickingImage = false;
@@ -83,10 +84,28 @@ class _DebtFormPageState extends State<DebtFormPage> {
     return Obx(() {
       _uiVersion.value;
       return Scaffold(
-        appBar: AppBar(title: Text(_isEditing ? 'editDebt'.tr : 'addDebt'.tr)),
+        backgroundColor: AppTheme.pageBackground(context),
+        appBar: AppBar(
+          centerTitle: true,
+          backgroundColor: AppTheme.pageBackground(context),
+          surfaceTintColor: Colors.transparent,
+          title: Text(_isEditing ? 'editDebt'.tr : 'addDebt'.tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            onPressed: () => Get.back<void>(),
+          ),
+          actions: [
+            IconButton(
+              tooltip: '保存',
+              icon: const Icon(Icons.check_rounded),
+              onPressed: _submit,
+            ),
+            const SizedBox(width: 6),
+          ],
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: AppTheme.pageInsets(),
             child: Form(
               key: _formKey,
               child: Column(
@@ -256,7 +275,7 @@ class _DebtImagePicker extends StatelessWidget {
     final canAdd = images.length < 3;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),

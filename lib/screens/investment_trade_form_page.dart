@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../app/app_theme.dart';
 import '../core/app_constants.dart';
 import '../core/formatters.dart';
 import '../core/id.dart';
@@ -102,11 +103,30 @@ class _InvestmentTradeFormPageState extends State<InvestmentTradeFormPage> {
 
       final fundCurrency = selectedFund?.currency ?? _newFundCurrency;
 
+      final cs = Theme.of(context).colorScheme;
       return Scaffold(
-        appBar: AppBar(title: Text(_isEditing ? 'editInvestmentTrade'.tr : (_isSell ? 'sellInvestment'.tr : 'buyInvestment'.tr))),
+        backgroundColor: AppTheme.pageBackground(context),
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text(_isEditing ? 'editInvestmentTrade'.tr : (_isSell ? 'sellInvestment'.tr : 'buyInvestment'.tr)),
+          backgroundColor: AppTheme.pageBackground(context),
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            onPressed: () => Get.back<void>(),
+          ),
+          actions: [
+            IconButton(
+              tooltip: '保存',
+              icon: Icon(Icons.check_rounded, color: cs.primary, size: 24),
+              onPressed: _submit,
+            ),
+            const SizedBox(width: 6),
+          ],
+        ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: AppTheme.pageInsets(),
             child: Form(
               key: _formKey,
               child: Column(
@@ -415,7 +435,7 @@ class _TradeDateField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,

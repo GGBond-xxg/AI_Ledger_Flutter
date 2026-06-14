@@ -358,7 +358,7 @@
   "addInvestmentActionSubtitle": "Optionally choose a funding account; choosing one deducts funds and creates a bill record",
   "sellInvestmentActionSubtitle": "Record a sell order and receive funds automatically",
   "useDynamicColors": "Use MD3 dynamic color",
-  "useDynamicColorsDesc": "When enabled, colors follow Material You / system wallpaper colors. When disabled, the app uses fixed brand colors.",
+  "useDynamicColorsDesc": "When enabled, colors follow Material You / system wallpaper colors.",
   "billCategory_debtPayable": "New payable",
   "billCategory_debtReceivable": "New receivable",
   "billCategory_debtRepayment": "Debt repayment",

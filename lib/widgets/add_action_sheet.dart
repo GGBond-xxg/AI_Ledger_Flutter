@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../app/app_theme.dart';
+import 'safe_bottom_sheet.dart';
 
 
 class AddActionSheet extends StatelessWidget {
@@ -20,28 +21,26 @@ class AddActionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
-      decoration: BoxDecoration(
-        color: AppTheme.cardColor(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: AppTheme.isDark(context) ? 0.32 : 0.08), blurRadius: 30, offset: const Offset(0, -4))],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 44, height: 5, decoration: BoxDecoration(color: AppTheme.textSubtle(context).withValues(alpha: 0.30), borderRadius: BorderRadius.circular(99))),
-            const SizedBox(height: 16),
-            _SheetAction(icon: Icons.account_balance_wallet_rounded, title: 'addAsset'.tr, subtitle: 'addCashSubtitle'.tr, onTap: onAddAsset),
-            _SheetAction(icon: Icons.trending_up_rounded, title: 'addInvestment'.tr, subtitle: 'addInvestmentSubtitle'.tr, onTap: onAddInvestment),
-            _SheetAction(icon: Icons.receipt_long_rounded, title: 'addDebt'.tr, subtitle: 'addDebtSubtitle'.tr, onTap: onAddDebt),
-            _SheetAction(icon: Icons.sync_rounded, title: 'refreshQuotes'.tr, subtitle: 'refreshQuotesSubtitle'.tr, onTap: onRefresh),
-          ],
+    return SafeBottomSheet(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+      maxHeightFactor: 0.82,
+      children: [
+        Center(
+          child: Container(
+            width: 44,
+            height: 5,
+            decoration: BoxDecoration(
+              color: AppTheme.textSubtle(context).withValues(alpha: 0.30),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 16),
+        _SheetAction(icon: Icons.account_balance_wallet_rounded, title: 'addAsset'.tr, subtitle: 'addCashSubtitle'.tr, onTap: onAddAsset),
+        _SheetAction(icon: Icons.trending_up_rounded, title: 'addInvestment'.tr, subtitle: 'addInvestmentSubtitle'.tr, onTap: onAddInvestment),
+        _SheetAction(icon: Icons.receipt_long_rounded, title: 'addDebt'.tr, subtitle: 'addDebtSubtitle'.tr, onTap: onAddDebt),
+        _SheetAction(icon: Icons.sync_rounded, title: 'refreshQuotes'.tr, subtitle: 'refreshQuotesSubtitle'.tr, onTap: onRefresh),
+      ],
     );
   }
 }
