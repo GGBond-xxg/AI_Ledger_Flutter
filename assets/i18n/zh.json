@@ -358,7 +358,7 @@
   "addInvestmentActionSubtitle": "可不选资金来源；选择后会扣除资金并生成账单记录",
   "sellInvestmentActionSubtitle": "记录卖出订单，自动回到资金账户",
   "useDynamicColors": "使用 MD3 动态取色",
-  "useDynamicColorsDesc": "开启后跟随系统 Material You / 壁纸颜色",
+  "useDynamicColorsDesc": "开启后跟随系统 Material You / 壁纸颜色；关闭后使用固定品牌色。",
   "billCategory_debtPayable": "新增负债",
   "billCategory_debtReceivable": "新增应收",
   "billCategory_debtRepayment": "还款",

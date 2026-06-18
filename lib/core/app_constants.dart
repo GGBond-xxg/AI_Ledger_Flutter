@@ -13,5 +13,6 @@ const List<String> kMetalUnits = [
   'troy_ounce',
 ];
 
-const String kDefaultApiBaseUrl = 'https://eurit.eu.cc';
-const String kApiBaseUrlHint = 'https://eurit.eu.cc';
+const String kDefaultApiBaseUrl = String.fromEnvironment('LEDGER_API_BASE_URL', defaultValue: '');
+const String kDefaultApiToken = String.fromEnvironment('LEDGER_API_TOKEN', defaultValue: '');
+const String kApiBaseUrlHint = '请填写你的行情 API 地址';

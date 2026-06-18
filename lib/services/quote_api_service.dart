@@ -67,7 +67,7 @@ class QuoteApiService {
     int limit = 12,
   }) async {
     final base = normalizeBaseUrl(settings.apiBaseUrl);
-    if (base.isEmpty || settings.apiToken.trim().isEmpty) {
+    if (base.isEmpty) {
       return const [];
     }
 
@@ -80,7 +80,9 @@ class QuoteApiService {
     try {
       final response = await client.get(
         uri,
-        headers: {'x-api-token': settings.apiToken.trim()},
+        headers: {
+          if (settings.apiToken.trim().isNotEmpty) 'x-api-token': settings.apiToken.trim(),
+        },
       ).timeout(_searchTimeout);
 
       final decoded = _tryDecodeObject(response.body);
@@ -105,15 +107,13 @@ class QuoteApiService {
     if (base.isEmpty) {
       throw Exception('apiAddressRequiredDetail'.tr);
     }
-    if (settings.apiToken.trim().isEmpty) {
-      throw Exception('apiTokenRequiredDetail'.tr);
-    }
-
     final uri = Uri.parse('$base/api/health');
     try {
       final response = await client.get(
         uri,
-        headers: {'x-api-token': settings.apiToken.trim()},
+        headers: {
+          if (settings.apiToken.trim().isNotEmpty) 'x-api-token': settings.apiToken.trim(),
+        },
       ).timeout(_healthTimeout);
 
       final decoded = _tryDecodeObject(response.body);

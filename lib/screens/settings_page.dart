@@ -25,6 +25,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  static const _maskedApiToken = '******';
+
   final LedgerStore store = Get.find<LedgerStore>();
   late final TextEditingController _apiBaseController;
   late final TextEditingController _tokenController;
@@ -41,7 +43,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     _apiBaseController = TextEditingController(text: store.settings.apiBaseUrl);
-    _tokenController = TextEditingController(text: store.settings.apiToken);
+    _tokenController = TextEditingController(text: store.settings.apiToken.trim().isEmpty ? '' : _maskedApiToken);
     _currency = store.settings.defaultCurrency;
     _themeMode = store.settings.themeMode;
     _languageMode = store.settings.languageMode;
@@ -143,6 +145,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       controller: _tokenController,
                       label: 'apiToken'.tr,
                       hint: 'apiTokenHint'.tr,
+                      obscureText: _tokenController.text == _maskedApiToken,
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
@@ -236,15 +239,20 @@ class _SettingsPageState extends State<SettingsPage> {
       _apiBaseController.text = normalizedApiBaseUrl;
     }
 
+    final inputToken = _tokenController.text.trim();
+    final nextToken = inputToken == _maskedApiToken ? store.settings.apiToken : inputToken;
     final settings = store.settings.copyWith(
       apiBaseUrl: normalizedApiBaseUrl,
-      apiToken: _tokenController.text.trim(),
+      apiToken: nextToken,
       defaultCurrency: _currency,
       themeMode: _themeMode,
       languageMode: _languageMode,
       useDynamicColors: _useDynamicColors,
     );
     await store.updateSettings(settings);
+    if (mounted) {
+      _tokenController.text = nextToken.trim().isEmpty ? '' : _maskedApiToken;
+    }
     if (mounted && showToast) _toast('settingsSaved'.tr);
     unawaited(store
         .refreshValuation(force: true, source: 'settingsSaved')

@@ -31,6 +31,10 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
       scaffoldBackgroundColor: pageSurface,
       colorScheme: colorScheme,
       textTheme: Typography.material2021(platform: TargetPlatform.android)

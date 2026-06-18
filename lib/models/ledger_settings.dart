@@ -2,8 +2,8 @@ import '../core/app_constants.dart';
 
 class LedgerSettings {
   LedgerSettings({
-    this.apiBaseUrl = '',
-    this.apiToken = '147258',
+    this.apiBaseUrl = kDefaultApiBaseUrl,
+    this.apiToken = kDefaultApiToken,
     this.defaultCurrency = 'CNY',
     this.themeMode = 'system',
     this.languageMode = 'system',
@@ -77,8 +77,8 @@ class LedgerSettings {
     final safeBiometrics = safeEnabled && requestedBiometrics;
 
     return LedgerSettings(
-      apiBaseUrl: apiBase == null || apiBase.isEmpty || apiBase == kDefaultApiBaseUrl ? '' : apiBase,
-      apiToken: ((json['apiToken'] as String?)?.trim().isNotEmpty == true) ? (json['apiToken'] as String).trim() : '147258',
+      apiBaseUrl: apiBase ?? kDefaultApiBaseUrl,
+      apiToken: (json['apiToken'] as String?)?.trim() ?? '',
       defaultCurrency: (json['defaultCurrency'] as String?)?.toUpperCase() ?? 'CNY',
       themeMode: ['system', 'light', 'dark'].contains(theme) ? theme! : 'system',
       languageMode: ['system', 'zh', 'zh_Hant', 'en'].contains(language) ? language! : 'system',
@@ -90,7 +90,7 @@ class LedgerSettings {
       appLockFailedAttempts: ((json['appLockFailedAttempts'] as num?)?.toInt().clamp(0, 8) ?? 0).toInt(),
       showZeroItems: json['showZeroItems'] == true,
       assetSortAscending: json['assetSortAscending'] == true,
-      useDynamicColors: json['useDynamicColors'] == true,
+      useDynamicColors: json['useDynamicColors'] != false,
     );
   }
 

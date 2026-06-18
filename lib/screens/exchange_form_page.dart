@@ -51,8 +51,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       _fromAmountController.text = trimNum(existing.amount);
       _toAmountController.text = trimNum(existing.toAmount);
       _noteController.text = existing.note;
-      _newToCurrency =
-          existing.toCurrency.trim().isEmpty ? 'USD' : existing.toCurrency;
+      _newToCurrency = existing.toCurrency.trim().isEmpty ? 'USD' : existing.toCurrency;
       _occurredAt = existing.occurredAt;
     }
   }
@@ -74,9 +73,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       final fromAsset = _findAssetById(fundAssets, _fromAssetId);
       final toAsset = _findAssetById(fundAssets, _toAssetId);
       if (_fromAssetId.isNotEmpty && fromAsset == null) _fromAssetId = '';
-      if (_toAssetId.isNotEmpty && !_creatingToAsset && toAsset == null) {
-        _toAssetId = '';
-      }
+      if (_toAssetId.isNotEmpty && !_creatingToAsset && toAsset == null) _toAssetId = '';
 
       return _ExchangeScaffold(
         title: _isEditing ? '编辑换汇' : '换汇',
@@ -92,17 +89,14 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
                   fromAmount: _fromAmountController.text,
                   fromCurrency: fromAsset?.currency ?? '---',
                   toAmount: _toAmountController.text,
-                  toCurrency: toAsset?.currency ??
-                      (_creatingToAsset ? _newToCurrency : '---'),
+                  toCurrency: toAsset?.currency ?? (_creatingToAsset ? _newToCurrency : '---'),
                 ),
                 const SizedBox(height: 18),
                 _ReferenceFormCard(
                   children: [
                     _InfoRow(
                       label: '换出账户',
-                      value: fromAsset == null
-                          ? '请选择资金账户'
-                          : _assetLabel(fromAsset),
+                      value: fromAsset == null ? '请选择资金账户' : _assetLabel(fromAsset),
                       muted: fromAsset == null,
                       onTap: () => _showAssetSheet(
                         title: '选择换出账户',
@@ -120,20 +114,14 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
                     _InlineInputRow(
                       label: '换出金额',
                       controller: _fromAmountController,
-                      hint: fromAsset == null
-                          ? '0.00'
-                          : '金额（${fromAsset.currency}）',
+                      hint: fromAsset == null ? '0.00' : '金额（${fromAsset.currency}）',
                       validator: _positiveAmountValidator,
                       onChanged: (_) => _refreshUi(),
                     ),
                     const _SoftDivider(),
                     _InfoRow(
                       label: '换入账户',
-                      value: _creatingToAsset
-                          ? '创建新资金账户'
-                          : (toAsset == null
-                              ? '请选择资金账户'
-                              : _assetLabel(toAsset)),
+                      value: _creatingToAsset ? '创建新资金账户' : (toAsset == null ? '请选择资金账户' : _assetLabel(toAsset)),
                       muted: !_creatingToAsset && toAsset == null,
                       onTap: () => _showAssetSheet(
                         title: '选择换入账户',
@@ -142,11 +130,8 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
                         allowCreate: true,
                         onSelected: (value) {
                           _toAssetId = value;
-                          if (_toAssetId == _newToAssetValue &&
-                              _newToNameController.text.trim().isEmpty) {
-                            _newToNameController.text = fromAsset == null
-                                ? '新资金账户'
-                                : '${fromAsset.name}换入';
+                          if (_toAssetId == _newToAssetValue && _newToNameController.text.trim().isEmpty) {
+                            _newToNameController.text = fromAsset == null ? '新资金账户' : '${fromAsset.name}换入';
                           }
                           _refreshUi();
                         },
@@ -159,10 +144,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
                         controller: _newToNameController,
                         hint: '例如：美元账户',
                         keyboardType: TextInputType.text,
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
-                                ? '请输入账户名称'
-                                : null,
+                        validator: (value) => value == null || value.trim().isEmpty ? '请输入账户名称' : null,
                         onChanged: (_) => _refreshUi(),
                       ),
                       const _SoftDivider(),
@@ -176,24 +158,20 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
                     _InlineInputRow(
                       label: '换入金额',
                       controller: _toAmountController,
-                      hint:
-                          '金额（${toAsset?.currency ?? (_creatingToAsset ? _newToCurrency : '目标货币')}）',
+                      hint: '金额（${toAsset?.currency ?? (_creatingToAsset ? _newToCurrency : '目标货币')}）',
                       validator: _positiveAmountValidator,
                       onChanged: (_) => _refreshUi(),
                     ),
                     const _SoftDivider(),
                     _InfoRow(
                       label: '日期',
-                      value:
-                          '${dateText(_occurredAt)}  ${_timeText(_occurredAt)}',
+                      value: '${dateText(_occurredAt)}  ${_timeText(_occurredAt)}',
                       onTap: _pickDate,
                     ),
                     const _SoftDivider(),
                     _InfoRow(
                       label: '备注',
-                      value: _noteController.text.trim().isEmpty
-                          ? '可填写备注...'
-                          : _noteController.text.trim(),
+                      value: _noteController.text.trim().isEmpty ? '可填写备注...' : _noteController.text.trim(),
                       muted: _noteController.text.trim().isEmpty,
                       onTap: _showNoteSheet,
                     ),
@@ -202,11 +180,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
                 const SizedBox(height: 16),
                 const _HelpBox(text: '换汇只记录两个资金账户之间的币种转换，不计入日常收入、支出和结余。'),
                 const SizedBox(height: 22),
-                SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: FilledButton(
-                        onPressed: _submit, child: const Text('保存'))),
+                SizedBox(width: double.infinity, height: 52, child: FilledButton(onPressed: _submit, child: const Text('保存'))),
               ],
             ),
           ),
@@ -229,21 +203,14 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
     return null;
   }
 
-  String _assetLabel(AssetItem asset) =>
-      '${asset.name}（${_formatMoney(asset.quantity, asset.currency)}）';
+  String _assetLabel(AssetItem asset) => '${asset.name}（${_formatMoney(asset.quantity, asset.currency)}）';
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-        context: context,
-        initialDate: _occurredAt,
-        firstDate: DateTime(2000),
-        lastDate: DateTime(2100));
+    final picked = await showDatePicker(context: context, initialDate: _occurredAt, firstDate: DateTime(2000), lastDate: DateTime(2100));
     if (picked == null || !mounted) return;
-    final pickedTime = await showTimePicker(
-        context: context, initialTime: TimeOfDay.fromDateTime(_occurredAt));
+    final pickedTime = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(_occurredAt));
     final time = pickedTime ?? TimeOfDay.fromDateTime(_occurredAt);
-    _occurredAt =
-        DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
+    _occurredAt = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
     _refreshUi();
   }
 
@@ -259,8 +226,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: AppTheme.sheetBackground(context),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (context) {
         return SafeBottomSheet(
           children: [
@@ -270,10 +236,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
-                  child: Text('暂无资金账户',
-                      style: TextStyle(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant)),
+                  child: Text('暂无资金账户', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               )
             else
@@ -281,8 +244,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
                     selected: selectedId == asset.id,
                     icon: Icons.account_balance_wallet_rounded,
                     title: asset.name,
-                    subtitle:
-                        '${asset.currency} · ${_formatMoney(asset.quantity, asset.currency)}',
+                    subtitle: '${asset.currency} · ${_formatMoney(asset.quantity, asset.currency)}',
                     onTap: () {
                       Navigator.pop(context);
                       onSelected(asset.id);
@@ -311,8 +273,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: AppTheme.sheetBackground(context),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (context) {
         return SafeBottomSheet(
           children: [
@@ -341,8 +302,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: AppTheme.sheetBackground(context),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (context) {
         return SafeBottomSheet(
           keyboardAware: true,
@@ -396,12 +356,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final AssetItem? newToAsset = creatingToAsset
-        ? AssetItem(
-            id: newId(),
-            name: _newToNameController.text.trim(),
-            type: 'cash',
-            quantity: 0,
-            currency: _newToCurrency)
+        ? AssetItem(id: newId(), name: _newToNameController.text.trim(), type: 'cash', quantity: 0, currency: _newToCurrency)
         : null;
     final toAssetId = newToAsset?.id ?? existingToAsset!.id;
     final toAssetName = newToAsset?.name ?? existingToAsset!.name;
@@ -424,8 +379,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
       createdAt: widget.existing?.createdAt,
     );
 
-    final Future<void> saveFuture = store.saveBillWithOptionalNewCashAsset(item,
-        newCashAsset: newToAsset, updateExisting: _isEditing);
+    final Future<void> saveFuture = store.saveBillWithOptionalNewCashAsset(item, newCashAsset: newToAsset, updateExisting: _isEditing);
     if (mounted) Get.back<void>();
     unawaited(saveFuture.catchError((_) {}));
     unawaited(store.refreshValuation(force: true, source: 'exchangeSaved'));
@@ -433,8 +387,7 @@ class _ExchangeFormPageState extends State<ExchangeFormPage> {
 }
 
 class _ExchangeScaffold extends StatelessWidget {
-  const _ExchangeScaffold(
-      {required this.title, required this.onSubmit, required this.child});
+  const _ExchangeScaffold({required this.title, required this.onSubmit, required this.child});
   final String title;
   final VoidCallback onSubmit;
   final Widget child;
@@ -446,19 +399,11 @@ class _ExchangeScaffold extends StatelessWidget {
       backgroundColor: AppTheme.pageBackground(context),
       appBar: AppBar(
         centerTitle: true,
-        title: Text(title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
         backgroundColor: AppTheme.pageBackground(context),
         surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-            onPressed: () => Get.back<void>(),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20)),
-        actions: [
-          IconButton(
-              onPressed: onSubmit,
-              icon: Icon(Icons.check_rounded, color: cs.primary, size: 24)),
-          const SizedBox(width: 6)
-        ],
+        leading: IconButton(onPressed: () => Get.back<void>(), icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20)),
+        actions: [IconButton(onPressed: onSubmit, icon: Icon(Icons.check_rounded, color: cs.primary, size: 24)), const SizedBox(width: 6)],
       ),
       body: SafeArea(child: child),
     );
@@ -466,11 +411,7 @@ class _ExchangeScaffold extends StatelessWidget {
 }
 
 class _ExchangeAmountHero extends StatelessWidget {
-  const _ExchangeAmountHero(
-      {required this.fromAmount,
-      required this.fromCurrency,
-      required this.toAmount,
-      required this.toCurrency});
+  const _ExchangeAmountHero({required this.fromAmount, required this.fromCurrency, required this.toAmount, required this.toCurrency});
   final String fromAmount;
   final String fromCurrency;
   final String toAmount;
@@ -484,27 +425,12 @@ class _ExchangeAmountHero extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-          color: cs.primaryContainer.withValues(alpha: 0.35),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55))),
+      decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(24), border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55))),
       child: Row(
         children: [
-          Expanded(
-              child: _AmountMini(
-                  label: '换出',
-                  amount: from,
-                  currency: fromCurrency,
-                  color: const Color(0xFFD64545))),
-          Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Icon(Icons.arrow_forward_rounded, color: cs.primary)),
-          Expanded(
-              child: _AmountMini(
-                  label: '换入',
-                  amount: to,
-                  currency: toCurrency,
-                  color: const Color(0xFF248B5D))),
+          Expanded(child: _AmountMini(label: '换出', amount: from, currency: fromCurrency, color: const Color(0xFFD64545))),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Icon(Icons.arrow_forward_rounded, color: cs.primary)),
+          Expanded(child: _AmountMini(label: '换入', amount: to, currency: toCurrency, color: const Color(0xFF248B5D))),
         ],
       ),
     );
@@ -512,11 +438,7 @@ class _ExchangeAmountHero extends StatelessWidget {
 }
 
 class _AmountMini extends StatelessWidget {
-  const _AmountMini(
-      {required this.label,
-      required this.amount,
-      required this.currency,
-      required this.color});
+  const _AmountMini({required this.label, required this.amount, required this.currency, required this.color});
   final String label;
   final String amount;
   final String currency;
@@ -525,25 +447,11 @@ class _AmountMini extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label,
-          style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w800)),
+      Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w800)),
       const SizedBox(height: 6),
-      FittedBox(
-          alignment: Alignment.centerLeft,
-          child: Text('${_currencySymbol(currency)} $amount',
-              style: TextStyle(
-                  color: color,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5))),
+      FittedBox(alignment: Alignment.centerLeft, child: Text('${_currencySymbol(currency)} $amount', style: TextStyle(color: color, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5))),
       const SizedBox(height: 2),
-      Text(currency,
-          style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: FontWeight.w700)),
+      Text(currency, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w700)),
     ]);
   }
 }
@@ -561,27 +469,15 @@ class _ReferenceFormCard extends StatelessWidget {
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.72)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(
-                  alpha: Theme.of(context).brightness == Brightness.dark
-                      ? 0.16
-                      : 0.035),
-              blurRadius: 22,
-              offset: const Offset(0, 12))
-        ],
+
       ),
-      child: Column(children: children),
+      child: ClipRRect(borderRadius: BorderRadius.circular(24), child: Column(children: children)),
     );
   }
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow(
-      {required this.label,
-      required this.value,
-      required this.onTap,
-      this.muted = false});
+  const _InfoRow({required this.label, required this.value, required this.onTap, this.muted = false});
   final String label;
   final String value;
   final VoidCallback onTap;
@@ -596,22 +492,10 @@ class _InfoRow extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(children: [
-            SizedBox(
-                width: 82,
-                child: Text(label,
-                    style: const TextStyle(fontWeight: FontWeight.w800))),
-            Expanded(
-                child: Text(value,
-                    textAlign: TextAlign.right,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: muted
-                            ? Theme.of(context).colorScheme.onSurfaceVariant
-                            : Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.w800))),
+            SizedBox(width: 82, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800))),
+            Expanded(child: Text(value, textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, style: TextStyle(color: muted ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w800))),
             const SizedBox(width: 4),
-            Icon(Icons.chevron_right_rounded,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(Icons.chevron_right_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ]),
         ),
       ),
@@ -620,13 +504,7 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _InlineInputRow extends StatelessWidget {
-  const _InlineInputRow(
-      {required this.label,
-      required this.controller,
-      required this.hint,
-      this.validator,
-      this.onChanged,
-      this.keyboardType});
+  const _InlineInputRow({required this.label, required this.controller, required this.hint, this.validator, this.onChanged, this.keyboardType});
   final String label;
   final TextEditingController controller;
   final String hint;
@@ -637,12 +515,9 @@ class _InlineInputRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(children: [
-        SizedBox(
-            width: 82,
-            child: Text(label,
-                style: const TextStyle(fontWeight: FontWeight.w800))),
+        SizedBox(width: 82, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800))),
         Expanded(
           child: Theme(
             data: Theme.of(context).copyWith(
@@ -659,8 +534,7 @@ class _InlineInputRow extends StatelessWidget {
             child: TextFormField(
               controller: controller,
               textAlign: TextAlign.right,
-              keyboardType: keyboardType ??
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: keyboardType ?? const TextInputType.numberWithOptions(decimal: true),
               validator: validator,
               onChanged: onChanged,
               decoration: InputDecoration(
@@ -686,12 +560,7 @@ class _InlineInputRow extends StatelessWidget {
 class _SoftDivider extends StatelessWidget {
   const _SoftDivider();
   @override
-  Widget build(BuildContext context) => Divider(
-      height: 1,
-      indent: 16,
-      endIndent: 16,
-      color:
-          Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.72));
+  Widget build(BuildContext context) => Divider(height: 1, indent: 16, endIndent: 16, color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.72));
 }
 
 class _HelpBox extends StatelessWidget {
@@ -701,22 +570,8 @@ class _HelpBox extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-            color: Theme.of(context)
-                .colorScheme
-                .primaryContainer
-                .withValues(alpha: 0.34),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outlineVariant
-                    .withValues(alpha: 0.45))),
-        child: Text(text,
-            style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                height: 1.5,
-                fontWeight: FontWeight.w700)),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.34), borderRadius: BorderRadius.circular(18), border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.45))),
+        child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.5, fontWeight: FontWeight.w700)),
       );
 }
 
@@ -724,22 +579,11 @@ class _SheetTitle extends StatelessWidget {
   const _SheetTitle({required this.title});
   final String title;
   @override
-  Widget build(BuildContext context) => Padding(
-      padding: const EdgeInsets.only(top: 2, bottom: 6),
-      child: Text(title,
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w900)));
+  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(top: 2, bottom: 6), child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)));
 }
 
 class _SheetTile extends StatelessWidget {
-  const _SheetTile(
-      {required this.selected,
-      required this.icon,
-      required this.title,
-      required this.subtitle,
-      required this.onTap});
+  const _SheetTile({required this.selected, required this.icon, required this.title, required this.subtitle, required this.onTap});
   final bool selected;
   final IconData icon;
   final String title;
@@ -752,9 +596,7 @@ class _SheetTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: selected
-            ? cs.primaryContainer.withValues(alpha: 0.64)
-            : cs.surfaceContainerLow,
+        color: selected ? cs.primaryContainer.withValues(alpha: 0.64) : cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
@@ -762,29 +604,9 @@ class _SheetTile extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(children: [
-              Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14)),
-                  child: Icon(icon, color: cs.primary, size: 20)),
+              Container(width: 38, height: 38, decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: cs.primary, size: 20)),
               const SizedBox(width: 12),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text(title,
-                        style: const TextStyle(fontWeight: FontWeight.w900)),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(subtitle,
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: cs.onSurfaceVariant,
-                              fontWeight: FontWeight.w600))
-                    ]
-                  ])),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), if (subtitle.isNotEmpty) ...[const SizedBox(height: 2), Text(subtitle, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, fontWeight: FontWeight.w600))]])),
               if (selected) Icon(Icons.check_circle_rounded, color: cs.primary),
             ]),
           ),
@@ -798,8 +620,7 @@ String _formatMoney(num value, String currency) {
   final absValue = value.abs();
   final fixed = absValue.toStringAsFixed(2);
   final parts = fixed.split('.');
-  final intPart = parts[0]
-      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => ',');
+  final intPart = parts[0].replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => ',');
   final sign = value < 0 ? '-' : '';
   return '$sign${_currencySymbol(currency)}$intPart.${parts[1]}';
 }

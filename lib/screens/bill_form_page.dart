@@ -50,8 +50,7 @@ class _BillFormPageState extends State<BillFormPage> {
       _assetId = existing.assetId;
       _investmentAssetId = existing.investmentAssetId;
       if (existing.investmentQuantity > 0) {
-        _investmentQuantityController.text =
-            trimNum(existing.investmentQuantity);
+        _investmentQuantityController.text = trimNum(existing.investmentQuantity);
       }
       _noteController.text = existing.note;
       _occurredAt = existing.occurredAt;
@@ -89,8 +88,7 @@ class _BillFormPageState extends State<BillFormPage> {
       }
 
       final selectedAsset = _findAssetById(fundAssets, _assetId);
-      final selectedInvestment =
-          _findAssetById(investmentAssets, _investmentAssetId);
+      final selectedInvestment = _findAssetById(investmentAssets, _investmentAssetId);
       if (_assetId.isNotEmpty && selectedAsset == null) {
         _assetId = '';
       }
@@ -154,9 +152,7 @@ class _BillFormPageState extends State<BillFormPage> {
                         if (_type == 'investment') ...[
                           _InfoRow(
                             label: '投资标的',
-                            value: selectedInvestment == null
-                                ? '请选择投资资产'
-                                : selectedInvestment.name,
+                            value: selectedInvestment == null ? '请选择投资资产' : selectedInvestment.name,
                             onTap: () => _showInvestmentSheet(investmentAssets),
                           ),
                           const _SoftDivider(),
@@ -169,16 +165,13 @@ class _BillFormPageState extends State<BillFormPage> {
                         ],
                         _InfoRow(
                           label: '日期',
-                          value:
-                              '${_dateLabel(_occurredAt)}  ${_timeText(_occurredAt)}',
+                          value: '${_dateLabel(_occurredAt)}  ${_timeText(_occurredAt)}',
                           onTap: _pickDate,
                         ),
                         const _SoftDivider(),
                         _InfoRow(
                           label: '备注',
-                          value: _noteController.text.trim().isEmpty
-                              ? '可填写备注...'
-                              : _noteController.text.trim(),
+                          value: _noteController.text.trim().isEmpty ? '可填写备注...' : _noteController.text.trim(),
                           muted: _noteController.text.trim().isEmpty,
                           onTap: _showNoteSheet,
                         ),
@@ -289,8 +282,7 @@ class _BillFormPageState extends State<BillFormPage> {
     );
     final time = pickedTime ?? TimeOfDay.fromDateTime(_occurredAt);
     setState(() {
-      _occurredAt = DateTime(
-          picked.year, picked.month, picked.day, time.hour, time.minute);
+      _occurredAt = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute);
     });
   }
 
@@ -319,8 +311,7 @@ class _BillFormPageState extends State<BillFormPage> {
       ...assets.map((asset) => _AccountOption(
             id: asset.id,
             name: asset.name,
-            subtitle:
-                '${asset.currency} · ${asset.note.trim().isEmpty ? '资金账户' : asset.note.trim()}',
+            subtitle: '${asset.currency} · ${asset.note.trim().isEmpty ? '资金账户' : asset.note.trim()}',
             currency: asset.currency,
             amount: asset.quantity,
           )),
@@ -330,8 +321,7 @@ class _BillFormPageState extends State<BillFormPage> {
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: AppTheme.sheetBackground(context),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (context) {
         return SafeBottomSheet(
           children: [
@@ -341,13 +331,9 @@ class _BillFormPageState extends State<BillFormPage> {
               final selected = item.id == _assetId;
               return _SheetTile(
                 selected: selected,
-                icon: item.id.isEmpty
-                    ? Icons.block_rounded
-                    : Icons.account_balance_wallet_rounded,
+                icon: item.id.isEmpty ? Icons.block_rounded : Icons.account_balance_wallet_rounded,
                 title: item.name,
-                subtitle: item.id.isEmpty
-                    ? item.subtitle
-                    : '${item.subtitle} · ${_formatMoney(item.amount, item.currency)}',
+                subtitle: item.id.isEmpty ? item.subtitle : '${item.subtitle} · ${_formatMoney(item.amount, item.currency)}',
                 onTap: () {
                   Navigator.pop(context);
                   setState(() {
@@ -382,8 +368,7 @@ class _BillFormPageState extends State<BillFormPage> {
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: AppTheme.sheetBackground(context),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (context) {
         return SafeBottomSheet(
           children: [
@@ -393,18 +378,13 @@ class _BillFormPageState extends State<BillFormPage> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
-                  child: Text('暂无投资资产',
-                      style: TextStyle(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant)),
+                  child: Text('暂无投资资产', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               )
             else
               ...assets.map((asset) {
                 final selected = asset.id == _investmentAssetId;
-                final symbol = asset.symbol.trim().isEmpty
-                    ? asset.name
-                    : asset.symbol.trim().toUpperCase();
+                final symbol = asset.symbol.trim().isEmpty ? asset.name : asset.symbol.trim().toUpperCase();
                 return _SheetTile(
                   selected: selected,
                   icon: Icons.show_chart_rounded,
@@ -435,8 +415,7 @@ class _BillFormPageState extends State<BillFormPage> {
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: AppTheme.sheetBackground(context),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (context) {
         return SafeBottomSheet(
           children: [
@@ -467,8 +446,7 @@ class _BillFormPageState extends State<BillFormPage> {
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: AppTheme.sheetBackground(context),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (context) {
         return SafeBottomSheet(
           keyboardAware: true,
@@ -509,18 +487,13 @@ class _BillFormPageState extends State<BillFormPage> {
 
     final existing = widget.existing;
     final linkedAsset = _findAssetById(store.billLinkedAssets, _assetId);
-    final linkedInvestment = _type == 'investment'
-        ? _findAssetById(store.billLinkedInvestments, _investmentAssetId)
-        : null;
-    if (_type == 'investment' &&
-        (linkedAsset == null || linkedInvestment == null)) {
+    final linkedInvestment = _type == 'investment' ? _findAssetById(store.billLinkedInvestments, _investmentAssetId) : null;
+    if (_type == 'investment' && (linkedAsset == null || linkedInvestment == null)) {
       Get.snackbar('投资账单', '请选择资金账户和投资资产');
       return;
     }
 
-    final investmentQuantity = linkedInvestment == null
-        ? 0.0
-        : double.tryParse(_investmentQuantityController.text.trim()) ?? 0.0;
+    final investmentQuantity = linkedInvestment == null ? 0.0 : double.tryParse(_investmentQuantityController.text.trim()) ?? 0.0;
     if (_type == 'investment' && investmentQuantity <= 0) {
       Get.snackbar('投资账单', '请输入有效投资数量');
       return;
@@ -542,16 +515,14 @@ class _BillFormPageState extends State<BillFormPage> {
       createdAt: existing?.createdAt,
     );
 
-    final Future<void> saveFuture =
-        _isEditing ? store.updateBill(item) : store.addBill(item);
+    final Future<void> saveFuture = _isEditing ? store.updateBill(item) : store.addBill(item);
     if (mounted) Get.back<void>();
     unawaited(saveFuture.catchError((_) {}));
   }
 }
 
 class _ReferenceBillScaffold extends StatelessWidget {
-  const _ReferenceBillScaffold(
-      {required this.title, required this.onSubmit, required this.child});
+  const _ReferenceBillScaffold({required this.title, required this.onSubmit, required this.child});
 
   final String title;
   final VoidCallback onSubmit;
@@ -565,8 +536,7 @@ class _ReferenceBillScaffold extends StatelessWidget {
       backgroundColor: pageBackground,
       appBar: AppBar(
         centerTitle: true,
-        title: Text(title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
         backgroundColor: pageBackground,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
@@ -587,10 +557,7 @@ class _ReferenceBillScaffold extends StatelessWidget {
 }
 
 class _BillTypeSelector extends StatelessWidget {
-  const _BillTypeSelector(
-      {required this.selectedType,
-      required this.onChanged,
-      required this.onTransferTap});
+  const _BillTypeSelector({required this.selectedType, required this.onChanged, required this.onTransferTap});
 
   final String selectedType;
   final ValueChanged<String> onChanged;
@@ -634,11 +601,7 @@ class _BillTypeSelector extends StatelessWidget {
 enum _BillTone { expense, income, transfer }
 
 class _TypeChip extends StatelessWidget {
-  const _TypeChip(
-      {required this.label,
-      required this.selected,
-      required this.tone,
-      required this.onTap});
+  const _TypeChip({required this.label, required this.selected, required this.tone, required this.onTap});
 
   final String label;
   final bool selected;
@@ -653,9 +616,7 @@ class _TypeChip extends StatelessWidget {
       _BillTone.transfer => Theme.of(context).colorScheme.onSurfaceVariant,
     };
     return Material(
-      color: selected
-          ? color.withValues(alpha: 0.13)
-          : Theme.of(context).colorScheme.surfaceContainerLow,
+      color: selected ? color.withValues(alpha: 0.13) : Theme.of(context).colorScheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -665,17 +626,11 @@ class _TypeChip extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: selected
-                    ? color.withValues(alpha: 0.42)
-                    : Theme.of(context).colorScheme.outlineVariant),
+            border: Border.all(color: selected ? color.withValues(alpha: 0.42) : Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Text(
             label,
-            style: TextStyle(
-                color:
-                    selected ? color : Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.w900),
+            style: TextStyle(color: selected ? color : Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w900),
           ),
         ),
       ),
@@ -696,22 +651,14 @@ class _AmountReadout extends StatelessWidget {
       child: Text(
         '${_currencySymbol(currency)} $amountText',
         textAlign: TextAlign.center,
-        style: const TextStyle(
-            fontSize: 40,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.8,
-            height: 1.05),
+        style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -0.8, height: 1.05),
       ),
     );
   }
 }
 
 class _CategoryPill extends StatelessWidget {
-  const _CategoryPill(
-      {required this.type,
-      required this.label,
-      required this.icon,
-      required this.onTap});
+  const _CategoryPill({required this.type, required this.label, required this.icon, required this.onTap});
 
   final String type;
   final String label;
@@ -720,8 +667,7 @@ class _CategoryPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        type == 'income' ? const Color(0xFF309B63) : const Color(0xFFE95D5D);
+    final color = type == 'income' ? const Color(0xFF309B63) : const Color(0xFFE95D5D);
     return Material(
       color: Theme.of(context).colorScheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(18),
@@ -732,8 +678,7 @@ class _CategoryPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border:
-                Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -741,9 +686,7 @@ class _CategoryPill extends StatelessWidget {
               Container(
                 width: 30,
                 height: 30,
-                decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.13),
-                    shape: BoxShape.circle),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.13), shape: BoxShape.circle),
                 child: Icon(icon, size: 18, color: color),
               ),
               const SizedBox(width: 8),
@@ -774,10 +717,7 @@ class _ReferenceFormCard extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.72)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-                alpha: Theme.of(context).brightness == Brightness.dark
-                    ? 0.16
-                    : 0.035),
+            color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.16 : 0.035),
             blurRadius: 22,
             offset: const Offset(0, 12),
           ),
@@ -789,11 +729,7 @@ class _ReferenceFormCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow(
-      {required this.label,
-      required this.value,
-      required this.onTap,
-      this.muted = false});
+  const _InfoRow({required this.label, required this.value, required this.onTap, this.muted = false});
 
   final String label;
   final String value;
@@ -812,8 +748,7 @@ class _InfoRow extends StatelessWidget {
             children: [
               SizedBox(
                 width: 76,
-                child: Text(label,
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
               ),
               Expanded(
                 child: Text(
@@ -821,16 +756,13 @@ class _InfoRow extends StatelessWidget {
                   textAlign: TextAlign.right,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: muted
-                        ? Theme.of(context).colorScheme.onSurfaceVariant
-                        : Theme.of(context).colorScheme.onSurface,
+                    color: muted ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(Icons.chevron_right_rounded,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+              Icon(Icons.chevron_right_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -840,8 +772,7 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _InlineInputRow extends StatelessWidget {
-  const _InlineInputRow(
-      {required this.label, required this.controller, required this.hint});
+  const _InlineInputRow({required this.label, required this.controller, required this.hint});
 
   final String label;
   final TextEditingController controller;
@@ -853,21 +784,13 @@ class _InlineInputRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
       child: Row(
         children: [
-          SizedBox(
-              width: 76,
-              child: Text(label,
-                  style: const TextStyle(fontWeight: FontWeight.w800))),
+          SizedBox(width: 76, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800))),
           Expanded(
             child: TextField(
               controller: controller,
               textAlign: TextAlign.right,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                  hintText: hint,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(hintText: hint, border: InputBorder.none, enabledBorder: InputBorder.none, focusedBorder: InputBorder.none),
             ),
           ),
         ],
@@ -877,8 +800,7 @@ class _InlineInputRow extends StatelessWidget {
 }
 
 class _SwitchInfoRow extends StatelessWidget {
-  const _SwitchInfoRow(
-      {required this.label, required this.value, required this.onChanged});
+  const _SwitchInfoRow({required this.label, required this.value, required this.onChanged});
 
   final String label;
   final bool value;
@@ -890,9 +812,7 @@ class _SwitchInfoRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),
       child: Row(
         children: [
-          Expanded(
-              child: Text(label,
-                  style: const TextStyle(fontWeight: FontWeight.w800))),
+          Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800))),
           Switch(value: value, onChanged: onChanged),
         ],
       ),
@@ -905,14 +825,7 @@ class _SoftDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Divider(
-        height: 1,
-        indent: 16,
-        endIndent: 16,
-        color: Theme.of(context)
-            .colorScheme
-            .outlineVariant
-            .withValues(alpha: 0.72));
+    return Divider(height: 1, indent: 16, endIndent: 16, color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.72));
   }
 }
 
@@ -935,9 +848,7 @@ class _NumberPad extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        border: Border(
-            top: BorderSide(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.64))),
+        border: Border(top: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.64))),
       ),
       child: SizedBox(
         height: 232,
@@ -947,23 +858,18 @@ class _NumberPad extends StatelessWidget {
             Expanded(
               child: Column(
                 children: [
-                  for (var rowIndex = 0;
-                      rowIndex < rows.length;
-                      rowIndex++) ...[
+                  for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) ...[
                     Expanded(
                       child: Row(
                         children: [
-                          for (var colIndex = 0;
-                              colIndex < rows[rowIndex].length;
-                              colIndex++) ...[
+                          for (var colIndex = 0; colIndex < rows[rowIndex].length; colIndex++) ...[
                             Expanded(
                               child: _PadKey(
                                 label: rows[rowIndex][colIndex],
                                 onTap: () => onKeyTap(rows[rowIndex][colIndex]),
                               ),
                             ),
-                            if (colIndex != rows[rowIndex].length - 1)
-                              const SizedBox(width: 8),
+                            if (colIndex != rows[rowIndex].length - 1) const SizedBox(width: 8),
                           ],
                         ],
                       ),
@@ -1021,17 +927,11 @@ class _PadKey extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outlineVariant
-                    .withValues(alpha: 0.68)),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.68)),
           ),
           child: isBack
               ? const Icon(Icons.backspace_outlined, size: 20)
-              : Text(label,
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.w700)),
+              : Text(label, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
         ),
       ),
     );
@@ -1047,22 +947,13 @@ class _SheetTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 2, bottom: 6),
-      child: Text(title,
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w900)),
+      child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900)),
     );
   }
 }
 
 class _SheetTile extends StatelessWidget {
-  const _SheetTile(
-      {required this.selected,
-      required this.icon,
-      required this.title,
-      required this.subtitle,
-      required this.onTap});
+  const _SheetTile({required this.selected, required this.icon, required this.title, required this.subtitle, required this.onTap});
 
   final bool selected;
   final IconData icon;
@@ -1076,9 +967,7 @@ class _SheetTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: selected
-            ? cs.primaryContainer.withValues(alpha: 0.64)
-            : cs.surfaceContainerLow,
+        color: selected ? cs.primaryContainer.withValues(alpha: 0.64) : cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
@@ -1090,9 +979,7 @@ class _SheetTile extends StatelessWidget {
                 Container(
                   width: 38,
                   height: 38,
-                  decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
                   child: Icon(icon, color: cs.primary, size: 20),
                 ),
                 const SizedBox(width: 12),
@@ -1100,19 +987,15 @@ class _SheetTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title,
-                          style: const TextStyle(fontWeight: FontWeight.w900)),
+                      Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
                       if (subtitle.trim().isNotEmpty) ...[
                         const SizedBox(height: 3),
-                        Text(subtitle,
-                            style: TextStyle(
-                                color: cs.onSurfaceVariant, fontSize: 12)),
+                        Text(subtitle, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                       ],
                     ],
                   ),
                 ),
-                if (selected)
-                  Icon(Icons.check_circle_rounded, color: cs.primary),
+                if (selected) Icon(Icons.check_circle_rounded, color: cs.primary),
               ],
             ),
           ),
@@ -1123,12 +1006,7 @@ class _SheetTile extends StatelessWidget {
 }
 
 class _AccountOption {
-  const _AccountOption(
-      {required this.id,
-      required this.name,
-      required this.subtitle,
-      required this.currency,
-      required this.amount});
+  const _AccountOption({required this.id, required this.name, required this.subtitle, required this.currency, required this.amount});
 
   final String id;
   final String name;
@@ -1186,6 +1064,7 @@ String trBillCategory(String key) {
   return map[key] ?? 'billCategory_$key'.tr;
 }
 
+
 IconData _categoryIcon(String key) {
   return switch (key) {
     'shopping' => Icons.shopping_cart_rounded,
@@ -1235,9 +1114,7 @@ String _formatMoney(num value, String currency) {
 
 String _dateLabel(DateTime value) {
   final now = DateTime.now();
-  final today = value.year == now.year &&
-      value.month == now.month &&
-      value.day == now.day;
+  final today = value.year == now.year && value.month == now.month && value.day == now.day;
   return '${value.year}年${value.month}月${value.day}日${today ? ' 今天' : ''}';
 }
 

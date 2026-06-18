@@ -19,13 +19,7 @@ class FormCard extends StatelessWidget {
         color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.62)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: AppTheme.isDark(context) ? 0.14 : 0.035),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
+
       ),
       child: Column(children: children),
     );

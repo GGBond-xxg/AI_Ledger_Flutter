@@ -14,6 +14,7 @@ class LedgerTextField extends StatelessWidget {
     this.maxLines = 1,
     this.validator,
     this.onChanged,
+    this.obscureText = false,
   });
 
   final TextEditingController controller;
@@ -23,6 +24,7 @@ class LedgerTextField extends StatelessWidget {
   final int maxLines;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
+  final bool obscureText;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,7 @@ class LedgerTextField extends StatelessWidget {
             controller: controller,
             keyboardType: keyboardType,
             maxLines: maxLines,
+            obscureText: obscureText,
             validator: validator,
             onChanged: onChanged,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
@@ -154,13 +157,7 @@ class LedgerDropdownField<T> extends StatelessWidget {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: AppTheme.isDark(context) ? 0.30 : 0.12),
-                    blurRadius: 28,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
+
               ),
               child: Column(
                 children: [

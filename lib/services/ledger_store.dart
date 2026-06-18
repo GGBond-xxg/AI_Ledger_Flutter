@@ -769,7 +769,7 @@ class LedgerStore extends GetxController {
     final debt = debts[debtIndex];
     final assetIndex = assets.indexWhere((asset) =>
         asset.id == item.assetId &&
-        asset.type == 'cash' &&
+        _isFundLikeAsset(asset) &&
         asset.currency.toUpperCase() == item.currency.toUpperCase());
 
     final isRepayment = category == 'debtRepayment';
@@ -781,8 +781,7 @@ class LedgerStore extends GetxController {
       }
       if (assetIndex >= 0) {
         final asset = assets[assetIndex];
-        asset.quantity += isRepayment ? item.amount : -item.amount;
-        if (asset.quantity.abs() < 0.000000001) asset.quantity = 0;
+        _applyFundLikeDelta(asset, isRepayment ? item.amount : -item.amount);
         assets[assetIndex] = asset;
       }
     } else {
@@ -810,8 +809,7 @@ class LedgerStore extends GetxController {
       item.debtTransactionId = transactionId;
       if (assetIndex >= 0) {
         final asset = assets[assetIndex];
-        asset.quantity += isRepayment ? -amount : amount;
-        if (asset.quantity.abs() < 0.000000001) asset.quantity = 0;
+        _applyFundLikeDelta(asset, isRepayment ? -amount : amount);
         assets[assetIndex] = asset;
       }
     }
@@ -830,11 +828,11 @@ class LedgerStore extends GetxController {
 
     final fromIndex = assets.indexWhere((asset) =>
         asset.id == item.assetId &&
-        asset.type == 'cash' &&
+        _isFundLikeAsset(asset) &&
         asset.currency.toUpperCase() == item.currency.toUpperCase());
     final toIndex = assets.indexWhere((asset) =>
         asset.id == item.toAssetId &&
-        asset.type == 'cash' &&
+        _isFundLikeAsset(asset) &&
         asset.currency.toUpperCase() == item.toCurrency.toUpperCase());
     if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) return;
 
@@ -847,14 +845,8 @@ class LedgerStore extends GetxController {
       toDelta = -toDelta;
     }
 
-    fromAsset.quantity += fromDelta;
-    toAsset.quantity += toDelta;
-    if (fromAsset.quantity.abs() < 0.000000001) {
-      fromAsset.quantity = 0;
-    }
-    if (toAsset.quantity.abs() < 0.000000001) {
-      toAsset.quantity = 0;
-    }
+    _applyFundLikeDelta(fromAsset, fromDelta);
+    _applyFundLikeDelta(toAsset, toDelta);
     assets[fromIndex] = fromAsset;
     assets[toIndex] = toAsset;
   }
@@ -862,7 +854,7 @@ class LedgerStore extends GetxController {
   void _applyBillFundEffect(BillItem item, {bool reverse = false}) {
     if (item.assetId.trim().isEmpty || item.amount <= 0) return;
 
-    final index = assets.indexWhere((asset) => item.assetId == asset.id && asset.type == 'cash');
+    final index = assets.indexWhere((asset) => item.assetId == asset.id && _isFundLikeAsset(asset));
     if (index < 0) return;
 
     final asset = assets[index];
@@ -882,10 +874,7 @@ class LedgerStore extends GetxController {
       delta = -delta;
     }
 
-    asset.quantity += delta;
-    if (asset.quantity.abs() < 0.000000001) {
-      asset.quantity = 0;
-    }
+    _applyFundLikeDelta(asset, delta);
     assets[index] = asset;
   }
 
@@ -909,10 +898,7 @@ class LedgerStore extends GetxController {
       delta = -delta;
     }
 
-    asset.quantity += delta;
-    if (asset.quantity.abs() < 0.000000001) {
-      asset.quantity = 0;
-    }
+    _applyFundLikeDelta(asset, delta);
     assets[index] = asset;
   }
 
@@ -923,7 +909,7 @@ class LedgerStore extends GetxController {
   }
 
   void setMainTab(int index) {
-    selectedMainTab.value = index.clamp(0, 4).toInt();
+    selectedMainTab.value = index.clamp(0, 3).toInt();
     update();
   }
 
@@ -1055,11 +1041,11 @@ class LedgerStore extends GetxController {
     if (preferredAssetId.trim().isNotEmpty) {
       candidates.addAll(assets.where((asset) =>
           asset.id == preferredAssetId &&
-          asset.type == 'cash' &&
+          _isFundLikeAsset(asset) &&
           asset.currency.toUpperCase() == source));
     }
     candidates.addAll(assets.where((asset) =>
-        asset.type == 'cash' &&
+        _isFundLikeAsset(asset) &&
         asset.currency.toUpperCase() == source &&
         !candidates.any((existing) => existing.id == asset.id)));
 
@@ -1108,10 +1094,10 @@ class LedgerStore extends GetxController {
     return 0;
   }
 
-  /// Assets that can be linked to bills.
-  /// Bills are everyday income/expense records, so they should affect cash/bank style assets only.
+  /// Assets that can be linked to bills and account movements.
+  /// 资金账户和存款理财都可以作为钱流入/流出的账户使用。
   List<AssetItem> get billLinkedAssets =>
-      assets.where((item) => item.type == 'cash').toList(growable: false);
+      assets.where(_isFundLikeAsset).toList(growable: false);
 
   List<AssetItem> get billLinkedInvestments =>
       assets.where((item) => item.isInvestment).toList(growable: false);
@@ -1275,7 +1261,7 @@ class LedgerStore extends GetxController {
   }) async {
     AssetItem? fund;
     for (final asset in assets) {
-      if (asset.id == fundAssetId && asset.type == 'cash') {
+      if (asset.id == fundAssetId && _isFundLikeAsset(asset)) {
         fund = asset;
         break;
       }
@@ -1452,7 +1438,7 @@ class LedgerStore extends GetxController {
     final normalizedCurrency = currency.toUpperCase();
     return assets
         .where((item) =>
-            item.type == 'cash' && item.currency.toUpperCase() == normalizedCurrency)
+            _isFundLikeAsset(item) && item.currency.toUpperCase() == normalizedCurrency)
         .toList(growable: false);
   }
 
@@ -1461,16 +1447,27 @@ class LedgerStore extends GetxController {
     final normalizedCurrency = currency.toUpperCase();
     final index = assets.indexWhere((item) =>
         item.id == assetId &&
-        item.type == 'cash' &&
+        _isFundLikeAsset(item) &&
         item.currency.toUpperCase() == normalizedCurrency);
     return index < 0 ? null : assets[index];
   }
 
-  void _applyDebtFundChange(AssetItem asset, double delta) {
-    asset.quantity += delta;
+  bool _isFundLikeAsset(AssetItem item) => item.type == 'cash' || item.type == 'manual';
+
+  void _applyFundLikeDelta(AssetItem asset, double delta) {
+    if (asset.type == 'manual') {
+      final price = asset.manualPrice.abs() > 0.000000001 ? asset.manualPrice : 1.0;
+      asset.quantity += delta / price;
+    } else {
+      asset.quantity += delta;
+    }
     if (asset.quantity.abs() < 0.000000001) {
       asset.quantity = 0;
     }
+  }
+
+  void _applyDebtFundChange(AssetItem asset, double delta) {
+    _applyFundLikeDelta(asset, delta);
     final index = assets.indexWhere((item) => item.id == asset.id);
     if (index >= 0) {
       assets[index] = asset;
@@ -1561,7 +1558,7 @@ class LedgerStore extends GetxController {
 
     final assetIndex = assets.indexWhere((item) =>
         item.id == assetId &&
-        item.type == 'cash' &&
+        _isFundLikeAsset(item) &&
         item.currency.toUpperCase() == debt.currency.toUpperCase());
     if (assetIndex < 0) return;
 
@@ -1579,13 +1576,10 @@ class LedgerStore extends GetxController {
 
     if (debt.isPayable) {
       // 我欠别人：还款后资金减少，负债减少。
-      asset.quantity -= settledAmount;
+      _applyFundLikeDelta(asset, -settledAmount);
     } else {
       // 别人欠我：收款后资金增加，应收减少。
-      asset.quantity += settledAmount;
-    }
-    if (asset.quantity.abs() < 0.000000001) {
-      asset.quantity = 0;
+      _applyFundLikeDelta(asset, settledAmount);
     }
 
     debt.amount -= settledAmount;
@@ -1655,25 +1649,22 @@ class LedgerStore extends GetxController {
 
     final assetIndex = assets.indexWhere((item) =>
         item.id == transaction.assetId &&
-        item.type == 'cash' &&
+        _isFundLikeAsset(item) &&
         item.currency.toUpperCase() == transaction.currency.toUpperCase());
     if (assetIndex >= 0) {
       final asset = assets[assetIndex];
       if (transaction.isRepayment) {
         // 删除“还款”记录：恢复资金，恢复负债。
-        asset.quantity += transaction.amount;
+        _applyFundLikeDelta(asset, transaction.amount);
       } else if (transaction.isCollection) {
         // 删除“收款”记录：扣回资金，恢复应收。
-        asset.quantity -= transaction.amount;
+        _applyFundLikeDelta(asset, -transaction.amount);
       } else if (transaction.isBorrow) {
         // 删除“新增欠款”：扣回资金，减少负债。
-        asset.quantity -= transaction.amount;
+        _applyFundLikeDelta(asset, -transaction.amount);
       } else if (transaction.isLend) {
         // 删除“新增借款”：恢复资金，减少应收。
-        asset.quantity += transaction.amount;
-      }
-      if (asset.quantity.abs() < 0.000000001) {
-        asset.quantity = 0;
+        _applyFundLikeDelta(asset, transaction.amount);
       }
       assets[assetIndex] = asset;
     }
@@ -1782,7 +1773,7 @@ class LedgerStore extends GetxController {
 
     // 未配置 API 地址或 Token 时，不要在首页直接弹红色错误。
     // 用户仍可继续本地记账；需要联网估值时，在设置页「测试 API」会给出明确原因。
-    if (settings.apiBaseUrl.trim().isEmpty || settings.apiToken.trim().isEmpty) {
+    if (settings.apiBaseUrl.trim().isEmpty) {
       valuation = _buildLocalValuation();
       lastError = null;
       await save();
