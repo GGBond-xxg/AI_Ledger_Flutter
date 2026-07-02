@@ -219,7 +219,12 @@ String _hm(DateTime date) {
 }
 
 String _billTitle(BillItem bill) {
-  if (bill.isInvestmentBill) return bill.isInvestmentSell ? '卖出 ${bill.investmentAssetName.isEmpty ? bill.category : bill.investmentAssetName}' : '买入 ${bill.investmentAssetName.isEmpty ? bill.category : bill.investmentAssetName}';
+  final customTitle = bill.title.trim();
+  if (customTitle.isNotEmpty) return customTitle;
+  if (bill.isInvestmentBill) {
+    final name = bill.investmentAssetName.trim().isEmpty ? _categoryName(bill.category) : bill.investmentAssetName.trim();
+    return bill.isInvestmentSell ? '卖出 $name' : '买入 $name';
+  }
   if (bill.isExchangeBill) return '换汇 / 转账';
   if (bill.isDebtBill) return bill.debtName.isEmpty ? _categoryName(bill.category) : bill.debtName;
   return _categoryName(bill.category);
@@ -229,10 +234,18 @@ String _categoryName(String category) {
   const map = {
     'salary': '工资收入',
     'food': '餐饮支出',
+    'drink': '饮品',
     'transport': '交通出行',
     'shopping': '购物消费',
+    'rent': '住房',
     'housing': '住房',
-    'medical': '医疗',
+    'utilities': '生活缴费',
+    'medical': '医疗健康',
+    'entertainment': '娱乐',
+    'bonus': '奖金',
+    'partTime': '兼职收入',
+    'investmentIncome': '投资收益',
+    'gift': '红包礼金',
     'otherIncome': '其他收入',
     'otherExpense': '其他支出',
     'investmentBuy': '投资买入',

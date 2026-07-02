@@ -852,17 +852,15 @@ String _investmentDisplayName(BillItem item) {
 }
 
 String _billTitle(BillItem item) {
-  final note = item.note.trim();
-  if (_billUsesNoteAsTitle(item)) {
-    return note;
-  }
+  final customTitle = item.title.trim();
+  if (customTitle.isNotEmpty) return customTitle;
   return trBillCategory(item.category);
 }
 
 bool _billUsesNoteAsTitle(BillItem item) {
-  final note = item.note.trim();
-  if (note.isEmpty) return false;
-  return item.category == 'otherExpense' || item.category == 'otherIncome';
+  // v11 新增了独立 title/标签字段，备注不再作为标题使用。
+  // 这里保留方法是为了让旧 UI 分支判断不再报错，同时始终展示备注。
+  return false;
 }
 
 String _billMeta(BillItem item) {

@@ -243,4 +243,36 @@ String trNoMatch(String type) {
   };
 }
 
-String trBillCategory(String key) => 'billCategory_$key'.tr;
+String trBillCategory(String key) {
+  final translationKey = 'billCategory_$key';
+  final translated = translationKey.tr;
+  if (translated != translationKey && translated.trim().isNotEmpty) return translated;
+  const fallback = {
+    '': '空类别',
+    'shopping': '购物',
+    'food': '餐饮',
+    'drink': '饮品',
+    'transport': '交通',
+    'rent': '房租',
+    'utilities': '水电',
+    'medical': '医疗',
+    'entertainment': '娱乐',
+    'otherExpense': '其他支出',
+    'salary': '工资',
+    'bonus': '奖金',
+    'partTime': '兼职',
+    'investmentIncome': '投资收益',
+    'gift': '红包礼金',
+    'otherIncome': '其他收入',
+    'investmentBuy': '投资买入',
+    'investmentSell': '投资卖出',
+    'exchange': '换汇',
+    'debtPayable': '新增负债',
+    'debtReceivable': '新增应收',
+    'debtRepayment': '还款',
+    'debtCollection': '收款',
+    'debtBorrowAdd': '新增欠款',
+    'debtLendAdd': '新增借款',
+  };
+  return fallback[key] ?? key;
+}

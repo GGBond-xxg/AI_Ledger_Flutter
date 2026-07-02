@@ -21,6 +21,7 @@ class BillItem {
     this.debtName = '',
     this.debtDirection = '',
     this.debtTransactionId = '',
+    this.title = '',
     this.note = '',
     DateTime? occurredAt,
     DateTime? createdAt,
@@ -59,6 +60,8 @@ class BillItem {
   String debtDirection;
   /// Linked debt transaction id for repayment / collection records.
   String debtTransactionId;
+  /// Optional user-defined bill title/tag. When empty, UI falls back to category name.
+  String title;
   String note;
   DateTime occurredAt;
   DateTime createdAt;
@@ -89,7 +92,7 @@ class BillItem {
     } else if (normalizedType == 'exchange') {
       category = 'exchange';
     } else if (normalizedType == 'debt') {
-      const debtCategories = {'debtPayable', 'debtReceivable', 'debtRepayment', 'debtCollection'};
+      const debtCategories = {'debtPayable', 'debtReceivable', 'debtRepayment', 'debtCollection', 'debtBorrowAdd', 'debtLendAdd'};
       if (!debtCategories.contains(category)) {
         category = 'debtPayable';
       }
@@ -113,6 +116,7 @@ class BillItem {
       debtName: json['debtName'] as String? ?? '',
       debtDirection: json['debtDirection'] as String? ?? '',
       debtTransactionId: json['debtTransactionId'] as String? ?? '',
+      title: json['title'] as String? ?? json['tag'] as String? ?? '',
       note: json['note'] as String? ?? '',
       occurredAt: DateTime.tryParse(json['occurredAt'] as String? ?? '') ?? DateTime.now(),
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
@@ -138,6 +142,7 @@ class BillItem {
         'debtName': debtName,
         'debtDirection': debtDirection,
         'debtTransactionId': debtTransactionId,
+        'title': title,
         'note': note,
         'occurredAt': occurredAt.toIso8601String(),
         'createdAt': createdAt.toIso8601String(),

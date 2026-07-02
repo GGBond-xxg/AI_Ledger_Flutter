@@ -30,40 +30,45 @@ class LedgerTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        minLines: maxLines > 1 ? maxLines : 1,
+        obscureText: obscureText,
+        validator: validator,
+        onChanged: onChanged,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+          filled: true,
+          fillColor: AppTheme.inputColor(context),
+          labelStyle: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
           ),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: controller,
-            keyboardType: keyboardType,
-            maxLines: maxLines,
-            obscureText: obscureText,
-            validator: validator,
-            onChanged: onChanged,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: hint,
-              filled: false,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              errorBorder: InputBorder.none,
-              focusedErrorBorder: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
+          hintStyle: TextStyle(
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.72),
+            fontWeight: FontWeight.w700,
           ),
-        ],
+          contentPadding: EdgeInsets.fromLTRB(18, maxLines > 1 ? 18 : 15, 18, maxLines > 1 ? 18 : 15),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.42)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.42)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide(color: colorScheme.primary.withValues(alpha: 0.60), width: 1.2),
+          ),
+        ),
       ),
     );
   }
@@ -94,49 +99,60 @@ class LedgerDropdownField<T> extends StatelessWidget {
     }
 
     final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () async {
-          final selected = await _showPicker(context);
-          if (selected != null) onChanged(selected);
-        },
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 12, 13),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+      child: Material(
+        color: AppTheme.inputColor(context),
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: () async {
+            final selected = await _showPicker(context);
+            if (selected != null) onChanged(selected);
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(18, 12, 14, 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.42)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    DefaultTextStyle.merge(
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.onSurface,
+                      const SizedBox(height: 6),
+                      DefaultTextStyle.merge(
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: colorScheme.onSurface,
+                        ),
+                        child: selectedItem?.child ?? Text(value.toString()),
                       ),
-                      child: selectedItem?.child ?? Text(value.toString()),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurfaceVariant),
-            ],
+                const SizedBox(width: 8),
+                Icon(Icons.keyboard_arrow_down_rounded, color: colorScheme.onSurfaceVariant),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-
 
   Future<T?> _showPicker(BuildContext context) async {
     final theme = Theme.of(context);
@@ -156,8 +172,7 @@ class LedgerDropdownField<T> extends StatelessWidget {
               constraints: BoxConstraints(maxHeight: screenHeight * 0.92),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
               ),
               child: Column(
                 children: [
@@ -171,13 +186,13 @@ class LedgerDropdownField<T> extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+                    padding: const EdgeInsets.fromLTRB(20, 18, 12, 10),
                     child: Row(
                       children: [
                         Expanded(
                           child: Text(
                             trSelectLabel(label),
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.3),
                           ),
                         ),
                         IconButton(

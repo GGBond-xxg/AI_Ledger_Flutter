@@ -34,6 +34,8 @@ class LedgerStore extends GetxController {
   final RxList<AssetItem> assets = <AssetItem>[].obs;
   final RxList<DebtItem> debts = <DebtItem>[].obs;
   final RxList<BillItem> bills = <BillItem>[].obs;
+  final RxList<String> customExpenseCategories = <String>[].obs;
+  final RxList<String> customIncomeCategories = <String>[].obs;
   final Rx<DateTime> selectedBillMonth = DateTime(DateTime.now().year, DateTime.now().month).obs;
   final RxInt billsVersion = 0.obs;
   final RxInt selectedMainTab = 0.obs;
@@ -124,6 +126,12 @@ class LedgerStore extends GetxController {
         ..addAll(((data['bills'] as List?) ?? [])
             .whereType<Map>()
             .map((e) => BillItem.fromJson(e.cast<String, dynamic>())));
+      customExpenseCategories
+        ..clear()
+        ..addAll(_stringList(data['customExpenseCategories']));
+      customIncomeCategories
+        ..clear()
+        ..addAll(_stringList(data['customIncomeCategories']));
       valuation = _withoutTransientQuoteErrors((data['valuation'] as Map?)?.cast<String, dynamic>());
       final deduped = _dedupeInvestmentAssets();
       final debtBillsMigrated = _ensureDebtBillsForExistingDebts();
@@ -322,6 +330,8 @@ class LedgerStore extends GetxController {
     assets.clear();
     debts.clear();
     bills.clear();
+    customExpenseCategories.clear();
+    customIncomeCategories.clear();
     valuation = null;
     lastError = null;
     _touchBills();
@@ -356,6 +366,8 @@ class LedgerStore extends GetxController {
       'assets': assets.map((e) => e.toJson()).toList(),
       'debts': debts.map((e) => e.toJson()).toList(),
       'bills': bills.map((e) => e.toJson()).toList(),
+      'customExpenseCategories': customExpenseCategories.toList(),
+      'customIncomeCategories': customIncomeCategories.toList(),
       'valuation': valuation,
       'exportedAt': DateTime.now().toIso8601String(),
     });
@@ -372,6 +384,8 @@ class LedgerStore extends GetxController {
     final importedBills = _listOfMaps(data['bills'])
         .map(BillItem.fromJson)
         .toList(growable: true);
+    final importedExpenseCategories = _stringList(data['customExpenseCategories']);
+    final importedIncomeCategories = _stringList(data['customIncomeCategories']);
 
     settings = LedgerSettings.fromJson(_mapOrEmpty(data['settings']));
     assets
@@ -383,6 +397,12 @@ class LedgerStore extends GetxController {
     bills
       ..clear()
       ..addAll(importedBills);
+    customExpenseCategories
+      ..clear()
+      ..addAll(importedExpenseCategories);
+    customIncomeCategories
+      ..clear()
+      ..addAll(importedIncomeCategories);
     valuation = _withoutTransientQuoteErrors(_nullableMap(data['valuation']));
 
     final deduped = _dedupeInvestmentAssets();
@@ -467,6 +487,65 @@ class LedgerStore extends GetxController {
   List<Map<String, dynamic>> _listOfMaps(dynamic value) {
     if (value is! List) return <Map<String, dynamic>>[];
     return value.whereType<Map>().map(_stringKeyMap).toList(growable: true);
+  }
+
+  List<String> _stringList(dynamic value) {
+    if (value is! List) return <String>[];
+    final seen = <String>{};
+    final result = <String>[];
+    for (final item in value) {
+      final text = item.toString().trim();
+      if (text.isEmpty) continue;
+      final key = text.toLowerCase();
+      if (seen.add(key)) result.add(text);
+    }
+    return result;
+  }
+
+  Future<void> addCustomBillCategory({required String type, required String name}) async {
+    final text = name.trim();
+    if (text.isEmpty || text == '空类别') return;
+    final target = type == 'income' ? customIncomeCategories : customExpenseCategories;
+    if (target.any((item) => item.trim().toLowerCase() == text.toLowerCase())) return;
+    target.add(text);
+    await save();
+    update();
+  }
+
+  Future<void> updateCustomBillCategory({required String type, required String oldName, required String newName}) async {
+    final oldText = oldName.trim();
+    final newText = newName.trim();
+    if (oldText.isEmpty || newText.isEmpty || newText == '空类别') return;
+    final target = type == 'income' ? customIncomeCategories : customExpenseCategories;
+    final index = target.indexWhere((item) => item.trim().toLowerCase() == oldText.toLowerCase());
+    if (index < 0) return;
+    if (target.any((item) => item.trim().toLowerCase() == newText.toLowerCase() && item.trim().toLowerCase() != oldText.toLowerCase())) {
+      return;
+    }
+    target[index] = newText;
+    for (final bill in bills) {
+      if (bill.type == type && bill.category.trim().toLowerCase() == oldText.toLowerCase()) {
+        bill.category = newText;
+      }
+    }
+    _touchBills();
+    await save();
+    update();
+  }
+
+  Future<void> deleteCustomBillCategory({required String type, required String name}) async {
+    final text = name.trim();
+    if (text.isEmpty) return;
+    final target = type == 'income' ? customIncomeCategories : customExpenseCategories;
+    target.removeWhere((item) => item.trim().toLowerCase() == text.toLowerCase());
+    for (final bill in bills) {
+      if (bill.type == type && bill.category.trim().toLowerCase() == text.toLowerCase()) {
+        bill.category = '';
+      }
+    }
+    _touchBills();
+    await save();
+    update();
   }
 
   Future<void> updateSettings(LedgerSettings newSettings) async {

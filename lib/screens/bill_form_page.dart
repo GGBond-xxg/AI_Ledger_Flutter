@@ -25,8 +25,12 @@ class BillFormPage extends StatefulWidget {
 class _BillFormPageState extends State<BillFormPage> {
   final LedgerStore store = Get.find<LedgerStore>();
   final _amountController = TextEditingController();
+  final _titleController = TextEditingController();
   final _noteController = TextEditingController();
   final _investmentQuantityController = TextEditingController();
+
+  static const int _maxCategoriesPerType = 12;
+  static const int _maxCategoriesTotal = 24;
 
   String _type = 'expense';
   String _category = 'shopping';
@@ -52,6 +56,7 @@ class _BillFormPageState extends State<BillFormPage> {
       if (existing.investmentQuantity > 0) {
         _investmentQuantityController.text = trimNum(existing.investmentQuantity);
       }
+      _titleController.text = existing.title;
       _noteController.text = existing.note;
       _occurredAt = existing.occurredAt;
     } else {
@@ -62,6 +67,7 @@ class _BillFormPageState extends State<BillFormPage> {
   @override
   void dispose() {
     _amountController.dispose();
+    _titleController.dispose();
     _noteController.dispose();
     _investmentQuantityController.dispose();
     super.dispose();
@@ -75,8 +81,10 @@ class _BillFormPageState extends State<BillFormPage> {
       store.assets.length;
       store.billsVersion.value;
       store.settings;
+      store.customExpenseCategories.length;
+      store.customIncomeCategories.length;
       final categories = _categoriesForType(_type);
-      if (!categories.contains(_category)) {
+      if (_category.trim().isNotEmpty && !categories.contains(_category)) {
         _category = categories.first;
       }
 
@@ -118,17 +126,14 @@ class _BillFormPageState extends State<BillFormPage> {
                         Get.to<void>(() => const ExchangeFormPage());
                       },
                     ),
-                    const SizedBox(height: 30),
-                    _AmountReadout(
+                    const SizedBox(height: 22),
+                    _CashewBillHeader(
+                      type: _type,
+                      categoryLabel: trBillCategory(_category),
+                      categoryIcon: _categoryIcon(_category),
                       currency: _currency,
                       amountText: _displayAmountText,
-                    ),
-                    const SizedBox(height: 18),
-                    _CategoryPill(
-                      type: _type,
-                      label: trBillCategory(_category),
-                      icon: _categoryIcon(_category),
-                      onTap: () => _showCategorySheet(categories),
+                      onCategoryTap: () => _showCategorySheet(categories),
                     ),
                     const SizedBox(height: 20),
                     _ReferenceFormCard(
@@ -170,6 +175,13 @@ class _BillFormPageState extends State<BillFormPage> {
                         ),
                         const _SoftDivider(),
                         _InfoRow(
+                          label: '标签',
+                          value: _titleController.text.trim().isEmpty ? '未填写则显示分类名称' : _titleController.text.trim(),
+                          muted: _titleController.text.trim().isEmpty,
+                          onTap: _showTitleSheet,
+                        ),
+                        const _SoftDivider(),
+                        _InfoRow(
                           label: '备注',
                           value: _noteController.text.trim().isEmpty ? '可填写备注...' : _noteController.text.trim(),
                           muted: _noteController.text.trim().isEmpty,
@@ -201,10 +213,29 @@ class _BillFormPageState extends State<BillFormPage> {
 
   List<String> _categoriesForType(String type) {
     return switch (type) {
-      'income' => _incomeCategories,
+      'income' => [..._incomeCategories, ...store.customIncomeCategories],
       'investment' => _investmentCategories,
-      _ => _expenseCategories,
+      _ => [..._expenseCategories, ...store.customExpenseCategories],
     };
+  }
+
+  bool _isCustomCategory(String category, String type) {
+    final list = type == 'income' ? store.customIncomeCategories : store.customExpenseCategories;
+    return list.any((item) => item.trim().toLowerCase() == category.trim().toLowerCase());
+  }
+
+  int _categoryCount(String type) {
+    if (type == 'income') return _incomeCategories.length + store.customIncomeCategories.length;
+    if (type == 'expense') return _expenseCategories.length + store.customExpenseCategories.length;
+    return 0;
+  }
+
+  bool _canAddCategory(String type) {
+    if (type != 'income' && type != 'expense') return false;
+    final expenseCount = _categoryCount('expense');
+    final incomeCount = _categoryCount('income');
+    return _categoryCount(type) < _maxCategoriesPerType &&
+        expenseCount + incomeCount < _maxCategoriesTotal;
   }
 
   String get _displayAmountText {
@@ -287,16 +318,353 @@ class _BillFormPageState extends State<BillFormPage> {
   }
 
   void _showCategorySheet(List<String> categories) {
-    _showSelectionSheet<String>(
-      title: '选择分类',
-      items: categories,
-      selected: _category,
-      labelBuilder: trBillCategory,
-      iconBuilder: _categoryIcon,
-      onSelected: (value) {
-        setState(() => _category = value);
+    final categoryType = _type == 'income' ? 'income' : 'expense';
+    final showMore = _canAddCategory(categoryType) && _type != 'investment';
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.sheetBackground(context),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (sheetContext) {
+        return SafeBottomSheet(
+          maxHeightFactor: 0.82,
+          padding: const EdgeInsets.fromLTRB(22, 8, 22, 24),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _type == 'income' ? '收入类别' : (_type == 'investment' ? '投资类别' : '支出类别'),
+                style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: -0.7),
+              ),
+            ),
+            const SizedBox(height: 18),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const gap = 16.0;
+                final columns = constraints.maxWidth >= 380 ? 4 : 3;
+                final itemWidth = (constraints.maxWidth - gap * (columns - 1)) / columns;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: 18,
+                  children: [
+                    ...categories.map((category) {
+                      final isCustom = _type != 'investment' && _isCustomCategory(category, categoryType);
+                      return SizedBox(
+                        width: itemWidth,
+                        child: _CategoryGridItem(
+                          selected: category == _category,
+                          label: trBillCategory(category),
+                          icon: _categoryIcon(category),
+                          color: _categoryColorForType(category, _type),
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                            setState(() => _category = category);
+                          },
+                          onLongPress: isCustom
+                              ? () {
+                                  Navigator.pop(sheetContext);
+                                  _showCustomCategoryActionSheet(type: categoryType, category: category);
+                                }
+                              : null,
+                        ),
+                      );
+                    }),
+                    if (showMore)
+                      SizedBox(
+                        width: itemWidth,
+                        child: _CategoryGridItem(
+                          selected: false,
+                          label: '更多',
+                          icon: Icons.add_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                            _showAddCategorySheet(initialType: categoryType);
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            if (!showMore && _type != 'investment') ...[
+              const SizedBox(height: 16),
+              Text(
+                '${categoryType == 'income' ? '收入' : '支出'}类别已满 $_maxCategoriesPerType 个，长按自定义类别可编辑或删除。',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ],
+        );
       },
     );
+  }
+
+  void _showCustomCategoryActionSheet({required String type, required String category}) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AppTheme.sheetBackground(context),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (sheetContext) {
+        final cs = Theme.of(sheetContext).colorScheme;
+        return SafeBottomSheet(
+          maxHeightFactor: 0.42,
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: _categoryColorForType(category, type).withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(_categoryIcon(category), color: _categoryColorForType(category, type)),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(trBillCategory(category), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 2),
+                      Text('自定义类别', style: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _SheetTile(
+              icon: Icons.edit_rounded,
+              title: '编辑类别',
+              subtitle: '修改类别名称，已有账单会同步更新',
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _showAddCategorySheet(initialType: type, editingName: category);
+              },
+            ),
+            _SheetTile(
+              icon: Icons.delete_outline_rounded,
+              title: '删除类别',
+              subtitle: '已有账单会显示为空类别',
+              titleColor: cs.error,
+              iconColor: cs.error,
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _confirmDeleteCustomCategory(type: type, category: category);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteCustomCategory({required String type, required String category}) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('删除类别'),
+          content: Text('确定删除“${trBillCategory(category)}”吗？已经创建的账单会显示为“空类别”。'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('取消')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('删除')),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+    await store.deleteCustomBillCategory(type: type, name: category);
+    if (!mounted) return;
+    if (_category.trim().toLowerCase() == category.trim().toLowerCase()) {
+      setState(() => _category = '');
+    }
+  }
+
+  void _showAddCategorySheet({required String initialType, String? editingName}) {
+    final isEditingCategory = editingName != null;
+    final nameController = TextEditingController(text: editingName ?? '');
+    var selectedType = initialType == 'income' ? 'income' : 'expense';
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: false,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.sheetBackground(context),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final cs = Theme.of(context).colorScheme;
+            final isIncome = selectedType == 'income';
+            final color = isIncome ? const Color(0xFF309B63) : const Color(0xFFE95D5D);
+            return SafeBottomSheet(
+              keyboardAware: true,
+              maxHeightFactor: 0.86,
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => _saveCustomCategory(sheetContext, selectedType, nameController.text, editingName: editingName),
+                      icon: Icon(Icons.check_rounded, color: cs.primary, size: 28),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(isEditingCategory ? '编辑类别' : '添加类别', style: const TextStyle(fontSize: 34, height: 1.05, fontWeight: FontWeight.w900, letterSpacing: -1.0)),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  height: 52,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _AddCategoryTypeButton(
+                          label: '支出',
+                          icon: Icons.south_rounded,
+                          selected: selectedType == 'expense',
+                          color: const Color(0xFFE95D5D),
+                          onTap: isEditingCategory ? null : () => setSheetState(() => selectedType = 'expense'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _AddCategoryTypeButton(
+                          label: '收入',
+                          icon: Icons.north_rounded,
+                          selected: selectedType == 'income',
+                          color: const Color(0xFF309B63),
+                          onTap: isEditingCategory ? null : () => setSheetState(() => selectedType = 'income'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Row(
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(color: color.withValues(alpha: 0.20), shape: BoxShape.circle),
+                      child: Icon(Icons.label_rounded, color: color, size: 32),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: TextField(
+                        controller: nameController,
+                        autofocus: true,
+                        maxLength: 12,
+                        decoration: const InputDecoration(
+                          counterText: '',
+                          hintText: '名称',
+                          border: UnderlineInputBorder(),
+                          enabledBorder: UnderlineInputBorder(),
+                          focusedBorder: UnderlineInputBorder(),
+                          filled: false,
+                        ),
+                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _saveCustomCategory(sheetContext, selectedType, nameController.text, editingName: editingName),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: cs.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.65)),
+                  ),
+                  child: Text(
+                    isEditingCategory
+                        ? '只修改类别名称，已有账单会同步更新。'
+                        : '新增后会出现在当前收入/支出分类中。收入和支出各最多 $_maxCategoriesPerType 个，合计最多 $_maxCategoriesTotal 个。',
+                    style: const TextStyle(fontWeight: FontWeight.w700, height: 1.45),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                FilledButton(
+                  onPressed: () => _saveCustomCategory(sheetContext, selectedType, nameController.text, editingName: editingName),
+                  child: Text(isEditingCategory ? '保存修改' : '保存类别'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _saveCustomCategory(BuildContext sheetContext, String type, String rawName, {String? editingName}) async {
+    final name = rawName.trim();
+    if (name.isEmpty) {
+      Get.snackbar(editingName == null ? '添加类别' : '编辑类别', '请输入类别名称');
+      return;
+    }
+    if (name == '空类别') {
+      Get.snackbar(editingName == null ? '添加类别' : '编辑类别', '空类别不能主动创建或选择');
+      return;
+    }
+
+    final expenseCount = _categoryCount('expense');
+    final incomeCount = _categoryCount('income');
+    final targetCount = _categoryCount(type);
+    if (editingName == null) {
+      if (targetCount >= _maxCategoriesPerType) {
+        Get.snackbar('添加类别', type == 'income' ? '收入类别最多 $_maxCategoriesPerType 个' : '支出类别最多 $_maxCategoriesPerType 个');
+        return;
+      }
+      if (expenseCount + incomeCount >= _maxCategoriesTotal) {
+        Get.snackbar('添加类别', '收入和支出类别合计最多 $_maxCategoriesTotal 个');
+        return;
+      }
+    }
+
+    final allNames = [
+      ..._expenseCategories.map(trBillCategory),
+      ..._incomeCategories.map(trBillCategory),
+      ...store.customExpenseCategories.where((item) => item.trim().toLowerCase() != (editingName ?? '').trim().toLowerCase()),
+      ...store.customIncomeCategories.where((item) => item.trim().toLowerCase() != (editingName ?? '').trim().toLowerCase()),
+    ];
+    if (allNames.any((item) => item.trim().toLowerCase() == name.toLowerCase())) {
+      Get.snackbar(editingName == null ? '添加类别' : '编辑类别', '这个类别已经存在');
+      return;
+    }
+
+    final navigator = Navigator.of(sheetContext);
+    if (editingName == null) {
+      await store.addCustomBillCategory(type: type, name: name);
+    } else {
+      await store.updateCustomBillCategory(type: type, oldName: editingName, newName: name);
+    }
+    if (!mounted) return;
+    navigator.pop();
+    setState(() {
+      _type = type;
+      _category = name;
+    });
   }
 
   void _showAccountSheet(List<AssetItem> assets) {
@@ -440,7 +808,30 @@ class _BillFormPageState extends State<BillFormPage> {
     );
   }
 
+  void _showTitleSheet() {
+    _showTextEditSheet(
+      title: '填写标签',
+      hint: '例如：项目奖金、午餐、房租',
+      controller: _titleController,
+      maxLines: 1,
+    );
+  }
+
   void _showNoteSheet() {
+    _showTextEditSheet(
+      title: '填写备注',
+      hint: '例如：和朋友吃午餐',
+      controller: _noteController,
+      maxLines: 4,
+    );
+  }
+
+  void _showTextEditSheet({
+    required String title,
+    required String hint,
+    required TextEditingController controller,
+    required int maxLines,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -452,13 +843,20 @@ class _BillFormPageState extends State<BillFormPage> {
           keyboardAware: true,
           maxHeightFactor: 0.76,
           children: [
-            const _SheetTitle(title: '填写备注'),
+            _SheetTitle(title: title),
             const SizedBox(height: 12),
             TextField(
-              controller: _noteController,
+              controller: controller,
               autofocus: true,
-              maxLines: 4,
-              decoration: const InputDecoration(hintText: '例如：和朋友吃午餐'),
+              maxLines: maxLines,
+              textInputAction: maxLines == 1 ? TextInputAction.done : TextInputAction.newline,
+              decoration: InputDecoration(hintText: hint),
+              onSubmitted: maxLines == 1
+                  ? (_) {
+                      Navigator.pop(context);
+                      setState(() {});
+                    }
+                  : null,
             ),
             const SizedBox(height: 14),
             SizedBox(
@@ -510,6 +908,7 @@ class _BillFormPageState extends State<BillFormPage> {
       investmentAssetId: linkedInvestment?.id ?? '',
       investmentAssetName: linkedInvestment?.name ?? '',
       investmentQuantity: investmentQuantity,
+      title: _titleController.text.trim(),
       note: _noteController.text.trim(),
       occurredAt: _occurredAt,
       createdAt: existing?.createdAt,
@@ -606,7 +1005,7 @@ class _TypeChip extends StatelessWidget {
   final String label;
   final bool selected;
   final _BillTone tone;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -638,65 +1037,231 @@ class _TypeChip extends StatelessWidget {
   }
 }
 
-class _AmountReadout extends StatelessWidget {
-  const _AmountReadout({required this.currency, required this.amountText});
+class _CashewBillHeader extends StatelessWidget {
+  const _CashewBillHeader({
+    required this.type,
+    required this.categoryLabel,
+    required this.categoryIcon,
+    required this.currency,
+    required this.amountText,
+    required this.onCategoryTap,
+  });
 
+  final String type;
+  final String categoryLabel;
+  final IconData categoryIcon;
   final String currency;
   final String amountText;
+  final VoidCallback onCategoryTap;
 
   @override
   Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Text(
-        '${_currencySymbol(currency)} $amountText',
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -0.8, height: 1.05),
+    final cs = Theme.of(context).colorScheme;
+    final isIncome = type == 'income';
+    final tone = isIncome ? const Color(0xFF309B63) : const Color(0xFFE95D5D);
+    final background = AppTheme.isDark(context)
+        ? cs.surfaceContainerLow
+        : tone.withValues(alpha: 0.08);
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(28),
+      child: InkWell(
+        onTap: onCategoryTap,
+        borderRadius: BorderRadius.circular(28),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 112),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.72)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 74,
+                height: 74,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: tone.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: tone.withValues(alpha: 0.22)),
+                ),
+                child: Icon(categoryIcon, color: tone, size: 34),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            categoryLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              height: 1.05,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.45,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.chevron_right_rounded, size: 24, color: cs.onSurfaceVariant),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 132),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${_currencySymbol(currency)}$amountText',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: -1.0, height: 1.0),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _CategoryPill extends StatelessWidget {
-  const _CategoryPill({required this.type, required this.label, required this.icon, required this.onTap});
+class _AddCategoryTypeButton extends StatelessWidget {
+  const _AddCategoryTypeButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
 
-  final String type;
   final String label;
   final IconData icon;
-  final VoidCallback onTap;
+  final bool selected;
+  final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = type == 'income' ? const Color(0xFF309B63) : const Color(0xFFE95D5D);
+    final cs = Theme.of(context).colorScheme;
+    final disabled = onTap == null;
+    final bg = selected ? cs.secondaryContainer : Colors.transparent;
+    final fg = disabled ? cs.onSurfaceVariant.withValues(alpha: 0.60) : (selected ? cs.onSecondaryContainer : cs.onSurfaceVariant);
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(18),
+      color: bg,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          height: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? color.withValues(alpha: 0.38) : Colors.transparent,
+              width: 1.2,
+            ),
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.13), shape: BoxShape.circle),
-                child: Icon(icon, size: 18, color: color),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: selected ? 0.20 : 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 15),
               ),
               const SizedBox(width: 8),
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
-              const SizedBox(width: 4),
-              const Icon(Icons.chevron_right_rounded, size: 20),
+              Text(
+                label,
+                style: TextStyle(
+                  color: fg,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.2,
+                ),
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CategoryGridItem extends StatelessWidget {
+  const _CategoryGridItem({
+    required this.selected,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    this.onLongPress,
+  });
+
+  final bool selected;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: selected ? color.withValues(alpha: 0.28) : color.withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(22),
+          child: InkWell(
+            onTap: onTap,
+            onLongPress: onLongPress,
+            borderRadius: BorderRadius.circular(22),
+            child: Container(
+              width: 62,
+              height: 62,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: selected ? color.withValues(alpha: 0.86) : cs.outlineVariant.withValues(alpha: 0.35),
+                  width: selected ? 2 : 1,
+                ),
+              ),
+              child: Icon(icon, color: selected ? color : color.withValues(alpha: 0.86), size: 28),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+        ),
+      ],
     );
   }
 }
@@ -953,13 +1518,23 @@ class _SheetTitle extends StatelessWidget {
 }
 
 class _SheetTile extends StatelessWidget {
-  const _SheetTile({required this.selected, required this.icon, required this.title, required this.subtitle, required this.onTap});
+  const _SheetTile({
+    this.selected = false,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.titleColor,
+    this.iconColor,
+  });
 
   final bool selected;
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Color? titleColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -979,15 +1554,15 @@ class _SheetTile extends StatelessWidget {
                 Container(
                   width: 38,
                   height: 38,
-                  decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
-                  child: Icon(icon, color: cs.primary, size: 20),
+                  decoration: BoxDecoration(color: (iconColor ?? cs.primary).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
+                  child: Icon(icon, color: iconColor ?? cs.primary, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                      Text(title, style: TextStyle(color: titleColor, fontWeight: FontWeight.w900)),
                       if (subtitle.trim().isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(subtitle, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
@@ -1024,7 +1599,6 @@ const List<String> _expenseCategories = [
   'utilities',
   'medical',
   'entertainment',
-  'otherExpense',
 ];
 
 const List<String> _incomeCategories = [
@@ -1033,7 +1607,6 @@ const List<String> _incomeCategories = [
   'partTime',
   'investmentIncome',
   'gift',
-  'otherIncome',
 ];
 
 const List<String> _investmentCategories = [
@@ -1043,6 +1616,7 @@ const List<String> _investmentCategories = [
 
 String trBillCategory(String key) {
   const map = {
+    '': '空类别',
     'shopping': '日常购物',
     'food': '餐饮',
     'drink': '饮品',
@@ -1061,12 +1635,37 @@ String trBillCategory(String key) {
     'investmentBuy': '投资买入',
     'investmentSell': '投资卖出',
   };
-  return map[key] ?? 'billCategory_$key'.tr;
+  final translated = 'billCategory_$key'.tr;
+  if (translated != 'billCategory_$key' && translated.trim().isNotEmpty) return translated;
+  return map[key] ?? key;
 }
 
 
+Color _categoryColor(String key) {
+  return switch (key) {
+    'food' => const Color(0xFF486A73),
+    'drink' => const Color(0xFF49A67D),
+    'shopping' => const Color(0xFFC2185B),
+    'transport' => const Color(0xFFC4AE25),
+    'entertainment' => const Color(0xFF1C75B9),
+    'salary' || 'bonus' || 'partTime' || 'investmentIncome' => const Color(0xFF2E7D32),
+    'gift' => const Color(0xFFC43D2F),
+    'rent' || 'utilities' => const Color(0xFF6A4C93),
+    'medical' => const Color(0xFF00897B),
+    'investmentBuy' || 'investmentSell' => const Color(0xFF3F6DF6),
+    _ => const Color(0xFF6B7280),
+  };
+}
+
+Color _categoryColorForType(String key, String type) {
+  final builtInColor = _categoryColor(key);
+  if (builtInColor != const Color(0xFF6B7280)) return builtInColor;
+  return type == 'income' ? const Color(0xFF309B63) : const Color(0xFFE95D5D);
+}
+
 IconData _categoryIcon(String key) {
   return switch (key) {
+    '' => Icons.block_rounded,
     'shopping' => Icons.shopping_cart_rounded,
     'food' => Icons.restaurant_rounded,
     'drink' => Icons.local_cafe_rounded,
@@ -1082,7 +1681,7 @@ IconData _categoryIcon(String key) {
     'gift' => Icons.card_giftcard_rounded,
     'investmentBuy' => Icons.add_chart_rounded,
     'investmentSell' => Icons.sell_rounded,
-    _ => Icons.more_horiz_rounded,
+    _ => Icons.label_rounded,
   };
 }
 
