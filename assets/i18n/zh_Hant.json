@@ -94,7 +94,7 @@
   "enterValidPrice": "請輸入正確單價",
   "photoProof": "本機凭證圖片",
   "remove": "移除",
-  "chooseFromAlbum": "相簿選擇",
+  "chooseFromAlbum": "相簿",
   "takePhoto": "拍照",
   "imageProofDesc": "最多新增 3 張聊天記錄、轉帳截圖或借據照片。圖片会壓縮后儲存到本機，不上傳伺服器。",
   "localImageNotice": "圖片只儲存在本机本機資料中，不會上傳伺服器。匯出 JSON 備份時也会包含这些圖片。",

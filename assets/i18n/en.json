@@ -94,7 +94,7 @@
   "enterValidPrice": "Please enter a valid price",
   "photoProof": "Local proof image",
   "remove": "Remove",
-  "chooseFromAlbum": "Choose photo",
+  "chooseFromAlbum": "Photo",
   "takePhoto": "Camera",
   "imageProofDesc": "Add up to 3 chat records, transfer screenshots, or IOU photos. Images are compressed and saved locally, not uploaded.",
   "localImageNotice": "Images are stored only on this device and are not uploaded. JSON backups will include these images.",

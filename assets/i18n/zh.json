@@ -94,7 +94,7 @@
   "enterValidPrice": "请输入正确单价",
   "photoProof": "本地凭证图片",
   "remove": "移除",
-  "chooseFromAlbum": "相册选择",
+  "chooseFromAlbum": "相册",
   "takePhoto": "拍照",
   "imageProofDesc": "最多添加 3 张聊天记录、转账截图或借条照片。图片会压缩后保存到本地，不上传服务器。",
   "localImageNotice": "图片只保存在本机本地数据中，不会上传服务器。导出 JSON 备份时也会包含这些图片。",
